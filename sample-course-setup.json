@@ -1,0 +1,24 @@
+{
+    "start_date": "2026-01-07 07:00:00",
+    "name": "Michael",
+    "items": [
+        {
+            "kind": "material",
+            "publish_after": { "weeks": 0, "days": 0 },
+            "topic": "wsg ma boi",
+            "name": "Unit 1 Lesson",
+            "description": "Helpful overview of the lesson for unit 1 part A",
+            "files": ["CDR"]
+        },
+        {
+            "kind": "assignment",
+            "publish_after": { "weeks": 0, "days": 2 },
+            "topic": "Fanta lite bruv",
+            "name": "Unit 1 Quiz",
+            "description": "Check your understanding",
+            "files": ["CDR"],
+            "due_after": { "days": 3 },
+            "max_points": 30
+        }
+    ]
+}
