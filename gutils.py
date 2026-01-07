@@ -4,8 +4,12 @@
 # Resources:
 #   - https://developers.google.com/workspace/classroom/reference/rest
 #   - https://developers.google.com/workspace/drive/api/reference/rest/v3
+#   - [Google Python API Client Docs]:
+#       - Root: https://github.com/googleapis/google-api-python-client/blob/main/docs/dyn/index.md
+#       - Classroom v1: https://googleapis.github.io/google-api-python-client/docs/dyn/classroom_v1.html
+#       - Drive v3: https://googleapis.github.io/google-api-python-client/docs/dyn/drive_v3.html
 
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 import json, os, pprint
 
@@ -15,6 +19,9 @@ from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
+
+# TODO: Look into batch requests
+# Source: https://googleapis.github.io/google-api-python-client/docs/batch.html
 
 # NOTE: prefix 'gc-' -> Google Classroom
 #       prefix 'gd-' -> Google Drive
@@ -77,6 +84,7 @@ def gc_find_course(name: str) -> str | None:
     except HttpError as error:
         print(f"An error occurred: {error}")
 
+
 def gd_find_file(name: str) -> str | None:
     """Search a file, if found, return file id.
 
@@ -105,7 +113,9 @@ def gd_find_file(name: str) -> str | None:
         print(f"An error occurred: {error}")
 
 
-def gc_find_topic(course_id: str, name: str) -> str | None:
+def gc_find_topic(course_id: str, name: str | None) -> str | None:
+    if not name: return
+
     try:
         """Search for a topic, if found, return its id"""
         results = GC_SERVICE.courses().topics().list(
@@ -114,8 +124,6 @@ def gc_find_topic(course_id: str, name: str) -> str | None:
         for topic in results["topic"]:
             if topic["name"] == name:
                 return topic["topicId"]
-
-        return None
     except HttpError as error:
         print(f"An error occurred: {error}")
 
@@ -126,8 +134,8 @@ def gc_create_material(
     title: str,
     scheduled_time: datetime,
     drive_file_ids: list[str],
-    topic: str = "",
-    description: str = "",
+    topic: str | None = None,
+    description: str | None = None,
     # publish: bool = True,
 ) -> None:
     """Create a material with provided info"""
@@ -135,7 +143,7 @@ def gc_create_material(
     material = {
         "courseId": course_id,
         "title": title,
-        "description": None if len(description) == 0 else description,
+        "description": description,
         "materials": [
             { "driveFile": { "driveFile": {"id": file_id } } } for file_id in drive_file_ids
         ],
@@ -159,16 +167,20 @@ def gc_create_assignment(
     title: str,
     scheduled_time: datetime,
     due_date: datetime,
-    mat_drive_file_ids: list[str] = [],
-    asg_drive_file_ids: list[str] = [],
-    topic: str = "",
-    description: str = "",
-    max_points: int = 100,
+    mat_drive_file_ids: list[str] | None = None,
+    asg_drive_file_ids: list[str] | None = None,
+    topic: str | None = None,
+    description: str | None = None,
+    max_points: int | None = 100,
     # publish: bool = True,
 ) -> None:
     """Create a material with provided info"""
-    scheduled_time_tz = scheduled_time.replace(tzinfo=MY_TIMEZONE)
+    scheduled_time_tz = scheduled_time.replace(tzinfo=UTC_TIMEZONE)
     due_date_utc = due_date.replace(tzinfo=UTC_TIMEZONE)
+    submit_dir_id = gd_find_file("TestDir")
+    assert submit_dir_id is not None, "All assignments have to have a submission directory"
+    topic_id = gc_find_topic(course_id, topic)
+    assert topic_id is not None, "For now, all topics for assignments have to exist; they can't be omitted."
 
     course_work = {
         "courseId": course_id,
@@ -176,9 +188,7 @@ def gc_create_assignment(
         "description": description,
         "materials": [
             { "driveFile": { "driveFile": {"id": file_id } } } for file_id in mat_drive_file_ids
-        ],
-        # NOTE: In order to use scheduled time attribute, the status has to be 'DRAFT'.
-        "state": "DRAFT",
+        ] if mat_drive_file_ids else [],
         "dueDate": {
             "year": due_date_utc.year,
             "month": due_date_utc.month,
@@ -188,15 +198,16 @@ def gc_create_assignment(
             "hours": due_date_utc.hour,
             "minutes": due_date_utc.minute,
             "seconds": due_date_utc.second,
-            "nanos": int(due_date_utc.microsecond / 1000)
         },
         "scheduledTime": scheduled_time_tz.isoformat(),
+        # NOTE: In order to use scheduled time attribute, the status has to be 'DRAFT'.
+        "state": "DRAFT",
         "maxPoints": max_points,
         "workType": "ASSIGNMENT",
         # TODO: make this configurable
         "assigneeMode": "ALL_STUDENTS",
         "submissionModificationMode": "MODIFIABLE_UNTIL_TURNED_IN",
-        "topicId": gc_find_topic(course_id, topic),
+        "topicId": topic_id,
     }
 
     try:

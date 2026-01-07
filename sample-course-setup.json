@@ -1,23 +1,23 @@
 {
-    "start_date": "2026-01-07 07:00:00",
+    "start_date": "2026-01-07 19:00:00",
     "name": "Michael",
     "items": [
         {
             "kind": "material",
-            "publish_after": { "weeks": 0, "days": 0 },
-            "topic": "wsg ma boi",
-            "name": "Unit 1 Lesson",
+            "publish_after": { "weeks": 0, "days": 1 },
+            "topic": "Fanta lite bruv!...",
+            "title": "Auto-generated Material",
             "description": "Helpful overview of the lesson for unit 1 part A",
-            "files": ["CDR"]
+            "files": ["Amharic Test Result.pdf", "Probe"]
         },
         {
             "kind": "assignment",
-            "publish_after": { "weeks": 0, "days": 2 },
-            "topic": "Fanta lite bruv",
-            "name": "Unit 1 Quiz",
+            "publish_after": { "weeks": 1, "days": 2 },
+            "topic": "Fanta lite bruv!...",
+            "title": "Auto-generated Assignment",
             "description": "Check your understanding",
             "files": ["CDR"],
-            "due_after": { "days": 3 },
+            "due_after": { "days": 4 },
             "max_points": 30
         }
     ]

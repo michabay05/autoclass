@@ -22,7 +22,7 @@ class WorkInfo:
     kind: WorkType
     publish_after: TimeDelta
     topic: str
-    name: str
+    title: str
     publish_date: datetime | None = None
     description: str | None = None
     files: list[str] | None = None
@@ -47,20 +47,21 @@ class WorkInfo:
         if isinstance(self.due_after, dict):
             self.due_after = TimeDelta(**self.due_after)
 
-    def get_due_date(self, prev_date: datetime) -> datetime | None:
+    def get_due_date(self, curr_pub_date: datetime) -> datetime | None:
+        if self.kind != "assignment": return
         if self.due_after is None: return
         # NOTE: At this point, there is a due date (it's obvious but why not write it down...)
         if self.due_date is not None: return self.due_date
 
-        return prev_date + timedelta(
+        return curr_pub_date + timedelta(
             weeks=float(self.due_after.weeks),
             days=float(self.due_after.days)
         )
 
-    def get_publish_date(self, prev_date: datetime) -> datetime:
+    def get_publish_date(self, prev_pub_date: datetime) -> datetime:
         if self.publish_date is not None: return self.publish_date
 
-        return prev_date + timedelta(
+        return prev_pub_date + timedelta(
             weeks=float(self.publish_after.weeks),
             days=float(self.publish_after.days)
         )
@@ -79,9 +80,61 @@ class CourseInfo:
         with open(json_path, "r") as f:
             info = json.load(f)
 
-        cinfo = cls(info["name"], datetime.fromisoformat(info["start_date"]))
+        start_date: datetime = datetime.fromisoformat(info["start_date"])
+        assert start_date > datetime.now(), "Course start date has to be in the future."
+        cinfo = cls(info["name"], start_date)
         cinfo.work_items = [WorkInfo(**item) for item in info["items"]]
         return cinfo
 
     def setup_course(self) -> None:
-        pass
+        prev_pub_date: datetime = self.start_date
+        for work in self.work_items:
+            pub_date: datetime = work.get_publish_date(prev_pub_date)
+            match work.kind:
+                case "assignment":
+                    due_date = work.get_due_date(pub_date)
+                    mat_drive_file_ids: list[str] = []
+                    assert work.files, (
+                        "Material has no associated files; if intentional, then just make a post instead"
+                    )
+
+                    for file in work.files:
+                        f_id = gutils.gd_find_file(file)
+                        if f_id: mat_drive_file_ids.append(f_id)
+
+                    assert due_date is not None, "Due date can't be none for an assignment"
+                    gutils.gc_create_assignment(
+                        self.course_id,
+                        work.title,
+                        pub_date,
+                        due_date,
+                        mat_drive_file_ids=mat_drive_file_ids,
+                        topic=work.topic,
+                        description=work.description,
+                        max_points=work.max_points,
+                    )
+
+                case "material":
+                    assert work.files, (
+                        "Material has no associated files; if intentional, then just make a post instead"
+                    )
+
+                    drive_file_ids: list[str] = []
+                    for file in work.files:
+                        f_id = gutils.gd_find_file(file)
+                        if f_id: drive_file_ids.append(f_id)
+
+                    gutils.gc_create_material(
+                        self.course_id,
+                        work.title,
+                        pub_date,
+                        drive_file_ids,
+                        topic=work.topic,
+                        description=work.description,
+                    )
+                case _:
+                    raise ValueError(f"Unknown work kind: {work.kind}")
+
+            prev_pub_date = pub_date
+
+CourseInfo.from_json("sample-course-setup.json").setup_course()
