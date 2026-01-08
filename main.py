@@ -5,6 +5,8 @@ import json
 
 import gutils
 
+# TODO: add feature to edit existing courses details
+
 @dataclass
 class TimeDelta:
     weeks: int = 0
@@ -23,6 +25,7 @@ class WorkInfo:
     publish_after: TimeDelta
     topic: str
     title: str
+    # Optional attributes
     publish_date: datetime | None = None
     description: str | None = None
     files: list[str] | None = None

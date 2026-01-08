@@ -168,7 +168,6 @@ def gc_create_assignment(
     scheduled_time: datetime,
     due_date: datetime,
     mat_drive_file_ids: list[str] | None = None,
-    asg_drive_file_ids: list[str] | None = None,
     topic: str | None = None,
     description: str | None = None,
     max_points: int | None = 100,
@@ -204,7 +203,7 @@ def gc_create_assignment(
         "state": "DRAFT",
         "maxPoints": max_points,
         "workType": "ASSIGNMENT",
-        # TODO: make this configurable
+        # TODO: make this configurable (maybe not though)
         "assigneeMode": "ALL_STUDENTS",
         "submissionModificationMode": "MODIFIABLE_UNTIL_TURNED_IN",
         "topicId": topic_id,
