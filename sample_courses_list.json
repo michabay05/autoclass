@@ -1,0 +1,26 @@
+{
+    "courses": [
+        {
+            "id": "215816991434",
+            "name": "Michael",
+            "descriptionHeading": "Michael",
+            "ownerId": "116153338451624500064",
+            "creationTime": "2020-12-10T22:13:24.840Z",
+            "updateTime": "2021-03-09T15:47:24.319Z",
+            "enrollmentCode": "6padmz2",
+            "courseState": "ACTIVE",
+            "alternateLink": "https://classroom.google.com/c/MjE1ODE2OTkxNDM0",
+            "teacherGroupEmail": "Michael_teachers_48e349bf@classroom.google.com",
+            "courseGroupEmail": "Michael_e1b3f61d@classroom.google.com",
+            "teacherFolder": {
+                "id": "0B1MLwX8-ERlYfjlBOV9aRHdSTFEtNTVOUHc0aVctbTNCeE9nakxWRVpjUmdOS3cwSFhhbFU"
+            },
+            "guardiansEnabled": false,
+            "calendarId": "classroom110076078588432954839@group.calendar.google.com",
+            "gradebookSettings": {
+                "calculationType": "TOTAL_POINTS",
+                "displaySetting": "HIDE_OVERALL_GRADE"
+            }
+        }
+    ]
+}
