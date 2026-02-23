@@ -1,10 +1,10 @@
 {
-    "start_date": "2026-01-08 19:00:00",
+    "start_date": "2026-03-08 19:00:00",
     "name": "Michael",
     "items": [
         {
             "kind": "material",
-            "publish_after": { "weeks": 0, "days": 1 },
+            "publish_at": { "weeks": 0, "days": 1 },
             "topic": "Fanta lite bruv!...",
             "title": "Auto-generated Material 03",
             "description": "Helpful overview of the lesson for unit 1 part A",
@@ -12,23 +12,24 @@
         },
         {
             "kind": "assignment",
-            "publish_date": "2026-01-13 07:00:00",
+            "publish_at": "2026-01-13 07:00:00",
             "topic": "Fanta lite bruv!...",
             "title": "Auto-generated Assignment 03",
             "description": "Check your understanding",
             "files": ["CDR"],
-            "due_after": { "days": 4 },
+            "due_at": { "days": 4 },
             "max_points": 30
-        }
+        },
         {
             "kind": "assignment",
-            "publish_after": { "weeks": 0, "days": 3 },
+            "publish_at": { "weeks": 0, "days": 3 },
             "topic": "Fanta lite bruv!...",
             "title": "Auto-generated Assignment 03",
             "description": "Check your understanding",
             "files": ["CDR"],
-            "due_after": { "days": 4 },
-            "max_points": 30
+            "due_at": { "days": 4 },
+            "max_points": 23
         }
     ]
 }
+
