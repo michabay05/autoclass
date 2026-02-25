@@ -9,7 +9,7 @@
 #       - Classroom v1: https://googleapis.github.io/google-api-python-client/docs/dyn/classroom_v1.html
 #       - Drive v3: https://googleapis.github.io/google-api-python-client/docs/dyn/drive_v3.html
 
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 from typing import Literal
@@ -72,7 +72,7 @@ def gservice_setup(cred_path: str = "credentials.json", token_path: str = "token
 GC_SERVICE, GD_SERVICE = gservice_setup()
 
 GCCourseState = Literal["ACTIVE", "ARCHIVED", "COURSE_STATE_UNSPECIFIED"]
-GCMaterialState = Literal["PUBLISHED", "DRAFTED", "DELETED", "COURSEWORK_MATERIAL_STATE_UNSPECIFIED"]
+GCMaterialState = Literal["PUBLISHED", "DRAFT", "DELETED", "COURSEWORK_MATERIAL_STATE_UNSPECIFIED"]
 GCMaterialShareMode = Literal["VIEW", "EDIT", "STUDENT_COPY", "UNKNOWN_SHARE_MODE"]
 GCAssignmentType = Literal[
     "COURSE_WORK_TYPE_UNSPECIFIED", "ASSIGNMENT",
@@ -245,6 +245,7 @@ class GCCourse:
                 # asc - ascending order
                 # desc - descending order
                 orderBy="updateTime asc",
+                courseWorkStates=["PUBLISHED", "DRAFT"]
             ).execute()
         except HttpError as error:
             print(f"An HTTP error occurred: {error}")
@@ -305,7 +306,6 @@ class GCCourse:
         return output
 
 
-
 class GCWrapper:
     def __init__(self) -> None:
         self._service = GC_SERVICE
@@ -342,43 +342,12 @@ class GCWrapper:
 
         return output
 
-    # TODO: deprecate this function
-    def OLD_find_course(self, name: str) -> str | None:
-        """Provided a course name, return its course id"""
-        try:
-            results = self._service.courses().list(pageSize=10).execute()
-
-            # NOTE: for now, I don't forsee having that many classes that the next page
-            # attribute is required
-            # TODO: handle next page, if provided here
-            for course in results["courses"]:
-                if course["name"] == name:
-                    return course["id"]
-
-            return None
-        except HttpError as error:
-            print(f"An HTTP error occurred: {error}")
-
     def find_course(self, name: str) -> GCId | None:
         for course in self._courses.values():
             if course.info.name == name:
                 return course.info.id
 
         return None
-
-    def OLD_find_topic(self, course_id: GCId, name: str | None) -> str | None:
-        if not name: return
-
-        try:
-            """Search for a topic, if found, return its id"""
-            results = self._service.courses().topics().list(
-                courseId=course_id, pageSize=10).execute()
-
-            for topic in results["topic"]:
-                if topic["name"] == name:
-                    return topic["topicId"]
-        except HttpError as error:
-            print(f"An HTTP error occurred: {error}")
 
     # Resource: https://developers.google.com/workspace/classroom/reference/rest/v1/courses.courseWorkMaterials
     def create_material(self,
@@ -469,6 +438,9 @@ class GCWrapper:
         except HttpError as error:
             print(f"An HTTP error occurred: {error}")
 
+    def export_info(self, course_id: str, out_json: str = "output.json") -> None:
+        with open(out_json, "w") as f:
+            json.dump(asdict(self._courses[course_id]), f, indent=4)
 
 class GDWrapper:
     def __init__(self) -> None:
@@ -509,5 +481,5 @@ if __name__ == "__main__":
     course = GC.find_course("Model Class")
     assert course is not None
 
-    with open("test.txt", "w") as f:
-        pprint(GC._courses[course], stream=f, indent=4)
+    GC.export_info(course)
+
