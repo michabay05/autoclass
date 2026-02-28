@@ -6,6 +6,7 @@ import { ReactSortable } from "react-sortablejs";
 import { Book, GripHorizontal, Lock, ListChecks } from "lucide-react";
 
 interface CourseProps {
+    courseId: string;
     name: string;
     state: string
 }
@@ -15,10 +16,10 @@ enum ItemKind {
     Assignment,
 }
 
-type Timing = number | Date;
-
 interface ItemProps {
     keyId: number;
+
+    itemId: string;
     kind: ItemKind;
     title: string;
     state: string;
@@ -27,8 +28,23 @@ interface ItemProps {
     locked: string;
     toggleLocked: () => void;
 
-    timing: Timing;
+    timing: string;
     updateTiming: (value: string) => boolean;
+}
+
+interface ExportItem {
+    itemId: string;
+    kind: ItemKind;
+    title: string;
+    state: string;
+    topicId: string;
+    locked: string;
+    timing: string;
+}
+
+interface ExportData {
+    courseId: string;
+    items: ExportItem[];
 }
 
 function Item(props) {
@@ -93,6 +109,7 @@ export default function App() {
 
             setCourse({
                 name: resJson?.info.name,
+                courseId: resJson?.info.id,
                 state: resJson?.info.courseState,
             });
 
@@ -101,22 +118,28 @@ export default function App() {
             for (const mat of resJson?.materials) {
                 items.push({
                     keyId: counter++,
+
+                    itemId: mat.id,
                     kind: ItemKind.Material,
                     title: mat.title,
                     state: mat.state,
                     topicId: mat.topicId,
                     locked: false,
+                    timing: "",
                 });
             }
 
             for (const assign of resJson?.assignments) {
                 items.push({
                     keyId: counter++,
+
+                    itemId: assign.id,
                     kind: ItemKind.Assignment,
                     title: assign.title,
                     state: assign.state,
                     topicId: assign.topicId,
                     locked: false,
+                    timing: "",
                 });
             }
 
@@ -134,51 +157,81 @@ export default function App() {
     };
 
     const updateTiming = (keyId: number, value: string): boolean => {
-        let success = true;
+        if (value.length === 0) return false;
 
-        const parseTiming = (value: string): Timing | null => {
+        const isValidTiming = (value: string): boolean => {
             const parsedNumValue = Number.parseInt(value);
+            // TODO: There probably is a way to refactor this `if` tree, but I won't
+            // do that now. You do it now...
             if (!isNaN(parsedNumValue)) {
-                return parsedNumValue;
+                return true;
             } else {
                 const parsedDateValue = Date.parse(value);
                 if (!isNaN(parsedDateValue)) {
-                    return parsedDateValue;
+                    return true;
                 } else {
                     alert("Unknown value given for timing");
-                    success = false;
-                    return "";
+                    return false;
                 }
             }
         };
 
+        if (!isValidTiming(value)) return false;
+
         setItemList(itemList.map(item => {
-            if (item.keyId === keyId) return {...item, timing: parseTiming(value) };
+            if (item.keyId === keyId) return {...item, timing: value };
             else return item;
         }));
 
-        return success;
+        return true;
+    };
+
+    const exportItems = (course: CourseProps, items: ItemProps[]): ExportData => {
+        const exports: ExportItem[] = [];
+        for (const item of items) {
+            const itemKind = item.kind === ItemKind.Material
+                ? "material" : "assignment";
+            exports.push({
+                itemId: item.itemId,
+                kind: itemKind,
+                locked: item.locked,
+                timing: item.timing,
+            });
+        }
+
+        return {
+            courseId: course.courseId,
+            items: exports
+        };
+    }
+
+    const handleExport = () => {
+        let allComplete = true;
+        for (const item of itemList) {
+            if (item.timing.length === 0) {
+                allComplete = false;
+                break;
+            }
+        }
+
+        if (!allComplete)
+            alert("Ensure that you have filled out all timings before exporting");
+
+        const out = exportItems(course, itemList);
+        console.log(out);
     };
 
     return <div className="w-9/10 max-w-4xl mx-auto">
         <header className="flex justify-between p-6 my-2 items-center">
             <div className="flex flex-col">
-                <span className="text-3xl font-bold">
-                    {course.name}
-                </span>
-                <span className="inline-block">
-                    {course.state}
-                </span>
+                <span className="text-3xl font-bold"> {course.name} </span>
+                <span className="inline-block text-sm"> {course.state} </span>
             </div>
             <nav className="flex">
-                <input type="date"
-                    className="border-2 border px-6 py-4 rounded"
-                />
-                <input type="time"
-                    className="border-2 border px-6 py-4 rounded mr-5"
-                />
-                <button className="bg-red-500 px-8 rounded-sm cursor-pointer">
-                    Save
+                <button className="bg-red-500 py-3 px-8 rounded-sm cursor-pointer"
+                    onClick={() => handleExport()}
+                >
+                    Export
                 </button>
             </nav>
         </header>
