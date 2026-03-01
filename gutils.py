@@ -95,8 +95,6 @@ class GCCourseInfo:
 
 @dataclass
 class GCTopic:
-    courseId: str
-    topicId: str
     name: str
 
 @dataclass
@@ -119,8 +117,6 @@ class GCTimeOfDay:
 
 @dataclass
 class GCMaterial:
-    courseId: str
-    id: str
     title: str
     state: GCMaterialState
     materials: list[GCMaterialItem]
@@ -132,14 +128,16 @@ class GCMaterial:
     #  - Update time
     #  - Scheduled time
 
-    # TODO: Consider if having a way to limit which students view this is important
+    # TODO: Consider if having a way to limit which students view this, is important
+
+    def to_dict(self) -> dict:
+        return asdict(self)
 
 @dataclass
 class GCAssignment:
-    courseId: str
-    id: str
     title: str
     state: GCMaterialState
+    workType: GCAssignmentType
 
     dueDate: GCDate | None = None
     dueTime: GCTimeOfDay | None = None
@@ -152,10 +150,20 @@ class GCAssignment:
     assignment: GCAssignmentDetail | None = None
     multipleChoiceQuestion: GCAssignmentMCDetail | None = None
 
+    def to_dict(self) -> dict:
+        default_dict = asdict(self)
+
+        match self.workType:
+            case "ASSIGNMENT":
+                del default_dict["multipleChoiceQuestion"]
+
+            case "MULTIPLE_CHOICE_QUESTION":
+                del default_dict["assignment"]
+
+        return default_dict
 
 @dataclass
 class GCCourse:
-    # NOTE: (key, value) -> (course, topics[])
     info: GCCourseInfo
     topics: list[GCTopic] = field(default_factory=list)
     materials: list[GCMaterial] = field(default_factory=list)
@@ -191,8 +199,6 @@ class GCCourse:
         output: list[GCTopic] = []
         for topic in results["topic"]:
             output.append(GCTopic(
-                courseId=topic["courseId"],
-                topicId=topic["topicId"],
                 name=topic["name"],
             ))
 
@@ -225,8 +231,6 @@ class GCCourse:
                 topic_id = material["topicId"]
 
             output.append(GCMaterial(
-                courseId=material["courseId"],
-                id=material["id"],
                 title=material["title"],
                 description=desc,
                 state=material["state"],
@@ -288,16 +292,14 @@ class GCCourse:
                 due_time = assignment["dueTime"]
 
             output.append(GCAssignment(
-                courseId=assignment["courseId"],
-                id=assignment["id"],
                 title=assignment["title"],
                 state=assignment["state"],
+                workType=assignment["workType"],
 
                 dueDate=due_date,
                 dueTime=due_time,
                 materials=mats,
                 maxPoints=max_pts,
-                topicId=topic_id,
                 description=desc,
                 assignment=assign_detail,
                 multipleChoiceQuestion=mcq
@@ -307,10 +309,36 @@ class GCCourse:
 
 
 class GCWrapper:
-    def __init__(self) -> None:
+    def __init__(self, import_path: str | None = None) -> None:
         self._service = GC_SERVICE
-        # NOTE: (key, value) -> (id, course)
-        self._courses: dict[GCId, GCCourse] = self._list_courses()
+        self._courses: dict[GCId, GCCourse] = {}
+        self._import_path: str | None = None
+
+        if (import_path is None) or (not os.path.exists(import_path)):
+            print("[WARN] No import provided OR import path does not exist.")
+            # NOTE: (key, value) -> (id, course)
+            self._courses = self._list_courses()
+            self._import_path = None
+
+            self.export_all_info()
+        else:
+            self._import_path = import_path
+            with open(import_path, "r") as f:
+                c_info = json.load(f)["allItems"]
+
+            for course_id in c_info:
+                course = c_info[course_id]
+                course_info = GCCourseInfo(**course["info"])
+                self._courses[course_id] = GCCourse(
+                    info=course_info,
+                    topics=[GCTopic(**ti) for ti in course["topics"]],
+                    materials=[GCMaterial(**mi) for mi in course["materials"]],
+                    assignments=[GCAssignment(**ai) for ai in course["assignments"]],
+                )
+
+    def __getitem__(self, key: str) -> GCCourse:
+        assert isinstance(key, str)
+        return self._courses[key]
 
     def _list_courses(self) -> dict[GCId, GCCourse]:
         """Provided a course name, return its course id"""
@@ -349,137 +377,67 @@ class GCWrapper:
 
         return None
 
-    # Resource: https://developers.google.com/workspace/classroom/reference/rest/v1/courses.courseWorkMaterials
-    def create_material(self,
-        course_id: str,
-        title: str,
-        scheduled_time: datetime,
-        drive_file_ids: list[str],
-        topic: str | None = None,
-        description: str | None = None,
-        # publish: bool = True,
-    ) -> None:
-        """Create a material with provided info"""
-        scheduled_time_tz = scheduled_time.replace(tzinfo=MY_TIMEZONE)
-        material = {
-            "courseId": course_id,
-            "title": title,
-            "description": description,
-            "materials": [
-                { "driveFile": { "driveFile": {"id": file_id } } } for file_id in drive_file_ids
-            ],
-            # "state": "PUBLISHED" if publish else "DRAFT",
-            # NOTE: In order to use scheduled time attribute, the status has to be 'DRAFT'.
-            "state": "DRAFT",
-            "scheduledTime": scheduled_time_tz.isoformat(),
-        }
-        topic_id = self._courses[course_id].find_topic(topic)
-        if topic_id is not None:
-            material["topicId"] = topic_id
-
-        try:
-            results = self._service.courses().courseWorkMaterials().create(
-                courseId=course_id, body=material).execute()
-        except HttpError as error:
-            print(f"An HTTP error occurred: {error}")
-
-
-    # Resource: https://developers.google.com/workspace/classroom/reference/rest/v1/courses.courseWorkMaterials
-    def create_assignment(self,
-        course_id: GCId,
-        title: str,
-        scheduled_time: datetime,
-        due_date: datetime,
-        mat_drive_file_ids: list[str] | None = None,
-        topic: str | None = None,
-        description: str | None = None,
-        max_points: int | None = 100,
-        # publish: bool = True,
-    ) -> None:
-        """Create a material with provided info"""
-        scheduled_time_tz = scheduled_time.replace(tzinfo=UTC_TIMEZONE)
-        due_date_utc = due_date.replace(tzinfo=UTC_TIMEZONE)
-        submit_dir_id = GD.find_file("TestDir")
-        assert submit_dir_id is not None, "All assignments have to have a submission directory"
-        topic_id = self._courses[course_id].find_topic(topic)
-        assert topic_id is not None, "For now, all topics for assignments have to exist; they can't be omitted."
-
-        course_work = {
-            "courseId": course_id,
-            "title": title,
-            "description": description,
-            "materials": [
-                { "driveFile": { "driveFile": {"id": file_id } } } for file_id in mat_drive_file_ids
-            ] if mat_drive_file_ids else [],
-            "dueDate": {
-                "year": due_date_utc.year,
-                "month": due_date_utc.month,
-                "day": due_date_utc.day,
-            },
-            "dueTime": {
-                "hours": due_date_utc.hour,
-                "minutes": due_date_utc.minute,
-                "seconds": due_date_utc.second,
-            },
-            "scheduledTime": scheduled_time_tz.isoformat(),
-            # NOTE: In order to use scheduled time attribute, the status has to be 'DRAFT'.
-            "state": "DRAFT",
-            "maxPoints": max_points,
-            "workType": "ASSIGNMENT",
-            # TODO: make this configurable (maybe not though)
-            "assigneeMode": "ALL_STUDENTS",
-            "submissionModificationMode": "MODIFIABLE_UNTIL_TURNED_IN",
-            "topicId": topic_id,
-        }
-
+    def create_assignment_v2(self, course_id: str, assignment: GCAssignment) -> None:
         try:
             results = self._service.courses().courseWork().create(
-                courseId=course_id, body=course_work).execute()
+                courseId=course_id, body=assignment.to_dict()).execute()
         except HttpError as error:
             print(f"An HTTP error occurred: {error}")
 
-    def export_info(self, course_id: str, out_json: str = "output.json") -> None:
-        with open(out_json, "w") as f:
-            json.dump(asdict(self._courses[course_id]), f, indent=4)
-
-class GDWrapper:
-    def __init__(self) -> None:
-        self._service = GD_SERVICE
-
-    def find_file(self, name: str) -> str | None:
-        """Search a file, if found, return file id.
-
-        *NOTE*: An exact name is required!!"""
-        # TODO: [possible extension] Instead of requiring the exact file name, take advantage of
-        # the search queries ('contains', 'filetype')
+    def create_material_v2(self, course_id: str, material: GCMaterial) -> None:
         try:
-            results = self._service.files().list(
-                pageSize=10, spaces="drive", q=f"name = '{name}'",
-                fields="nextPageToken, files(id, name, parents)",
-                # NOTE: I hope this won't be a problem at some point
-                includeItemsFromAllDrives=False
-            ).execute()
-            n = len(results["files"])
-            if n == 0:
-                # No results found
-                print(f"Found 0 files with name: '{name}'")
-                return None
-
-            if n > 1:
-                # Too many results found
-                print(f"Found {n} files with name: '{name}'")
-
-            return results["files"][0]["id"]
+            results = self._service.courses().courseWorkMaterials().create(
+                courseId=course_id, body=material.to_dict()).execute()
         except HttpError as error:
             print(f"An HTTP error occurred: {error}")
 
 
-GC = GCWrapper()
-GD = GDWrapper()
+    def export_all_info(self) -> None:
+        now = datetime.now()
+        out_json_path = f"exports/export-{now.month:02}-{now.year}.json"
 
-if __name__ == "__main__":
-    course = GC.find_course("Model Class")
-    assert course is not None
+        all_course_info = {}
+        for course_id in self._courses:
+            all_course_info[course_id] = asdict(self._courses[course_id])
 
-    GC.export_info(course)
+        with open(out_json_path, "w") as f:
+            out_dict = {
+                "exportDate": str(now),
+                "allItems": all_course_info
+            }
+            json.dump(out_dict, f, indent=4)
 
+
+# =================================================================
+#          ---------------- DEPRECATED ----------------
+# =================================================================
+# class GDWrapper:
+#     def __init__(self) -> None:
+#         self._service = GD_SERVICE
+#
+#     def find_file(self, name: str) -> str | None:
+#         """Search a file, if found, return file id.
+#
+#         *NOTE*: An exact name is required!!"""
+#         # TODO: [possible extension] Instead of requiring the exact file name, take advantage of
+#         # the search queries ('contains', 'filetype')
+#         try:
+#             results = self._service.files().list(
+#                 pageSize=10, spaces="drive", q=f"name = '{name}'",
+#                 fields="nextPageToken, files(id, name, parents)",
+#                 # NOTE: I hope this won't be a problem at some point
+#                 includeItemsFromAllDrives=False
+#             ).execute()
+#             n = len(results["files"])
+#             if n == 0:
+#                 # No results found
+#                 print(f"Found 0 files with name: '{name}'")
+#                 return None
+#
+#             if n > 1:
+#                 # Too many results found
+#                 print(f"Found {n} files with name: '{name}'")
+#
+#             return results["files"][0]["id"]
+#         except HttpError as error:
+#             print(f"An HTTP error occurred: {error}")
