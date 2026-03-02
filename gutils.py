@@ -11,7 +11,6 @@
 
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
-from zoneinfo import ZoneInfo
 from typing import Literal
 from pprint import pprint
 import json, os
@@ -21,13 +20,12 @@ from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
+# NOTE: The Google Classroom API service is of type Resource
+#   >> from googleapiclient.discovery import Resource
 from googleapiclient.errors import HttpError
 
-# TODO: Look into batch requests
+# TODO: Look into batch requests here if the amount grows too large
 # Source: https://googleapis.github.io/google-api-python-client/docs/batch.html
-
-# NOTE: prefix 'gc-' -> Google Classroom
-#       prefix 'gd-' -> Google Drive
 
 # NOTE: Whenever these scopes are modified, delete the token.json file to apply changed effects.
 SCOPE_LIST = [
@@ -38,9 +36,6 @@ SCOPE_LIST = [
     "classroom.coursework.me",
     "drive.readonly"
 ]
-# TODO: Instead of hard-coding, this should be determined when this is ran
-MY_TIMEZONE = ZoneInfo("America/New_York")
-UTC_TIMEZONE = timezone.utc
 
 def gservice_setup(cred_path: str = "credentials.json", token_path: str = "token.json"):
     creds = None
@@ -61,28 +56,23 @@ def gservice_setup(cred_path: str = "credentials.json", token_path: str = "token
                 token.write(creds.to_json())
 
     try:
+        # gc_service = build("classroom", "v1", credentials=creds)
+        # gd_service = build("drive", "v3", credentials=creds)
+        # return gc_service, gd_service
+
         gc_service = build("classroom", "v1", credentials=creds)
-        gd_service = build("drive", "v3", credentials=creds)
-        return gc_service, gd_service
+        return gc_service
     except MutualTLSChannelError as err:
         print(err)
         # NOTE: This is a temporary fix for dev purposes
         assert False
 
-GC_SERVICE, GD_SERVICE = gservice_setup()
 
 GCCourseState = Literal["ACTIVE", "ARCHIVED", "COURSE_STATE_UNSPECIFIED"]
-GCMaterialState = Literal["PUBLISHED", "DRAFT", "DELETED", "COURSEWORK_MATERIAL_STATE_UNSPECIFIED"]
-GCMaterialShareMode = Literal["VIEW", "EDIT", "STUDENT_COPY", "UNKNOWN_SHARE_MODE"]
-GCAssignmentType = Literal[
-    "COURSE_WORK_TYPE_UNSPECIFIED", "ASSIGNMENT",
-    "SHORT_ANSWER_QUESTION", "MULTIPLE_CHOICE_QUESTION"
-]
 GCId = str
-GCMaterialItem = dict
-GCAssignmentDetail = dict
-GCAssignmentMCDetail = dict
-GDId = str
+GCTopic = dict
+GCMaterial = dict
+GCAssignment = dict
 
 @dataclass
 class GCCourseInfo:
@@ -94,121 +84,44 @@ class GCCourseInfo:
     courseState: GCCourseState
 
 @dataclass
-class GCTopic:
-    name: str
-
-@dataclass
-class GCSharedDriveFile:
-    drive_res_id: GDId
-    share_mode: GCMaterialShareMode
-
-@dataclass
-class GCDate:
-    year: int
-    month: int
-    day: int
-
-@dataclass
-class GCTimeOfDay:
-    hours: int
-    minutes: int
-    seconds: int
-    nanos: int
-
-@dataclass
-class GCMaterial:
-    title: str
-    state: GCMaterialState
-    materials: list[GCMaterialItem]
-    topicId: str | None = None
-    description: str | None = None
-
-    # TODO: Consider if the following information is useful to store
-    #  - Creation time
-    #  - Update time
-    #  - Scheduled time
-
-    # TODO: Consider if having a way to limit which students view this, is important
-
-    def to_dict(self) -> dict:
-        return asdict(self)
-
-@dataclass
-class GCAssignment:
-    title: str
-    state: GCMaterialState
-    workType: GCAssignmentType
-
-    dueDate: GCDate | None = None
-    dueTime: GCTimeOfDay | None = None
-    materials: list[GCMaterialItem] | None = None
-    # NOTE: `None` or 0 implies ungraded
-    maxPoints: int | None = None
-    topicId: str | None = None
-    description: str | None = None
-
-    assignment: GCAssignmentDetail | None = None
-    multipleChoiceQuestion: GCAssignmentMCDetail | None = None
-
-    def to_dict(self) -> dict:
-        default_dict = asdict(self)
-
-        match self.workType:
-            case "ASSIGNMENT":
-                del default_dict["multipleChoiceQuestion"]
-
-            case "MULTIPLE_CHOICE_QUESTION":
-                del default_dict["assignment"]
-
-        return default_dict
-
-@dataclass
 class GCCourse:
     info: GCCourseInfo
+
     topics: list[GCTopic] = field(default_factory=list)
     materials: list[GCMaterial] = field(default_factory=list)
     assignments: list[GCAssignment] = field(default_factory=list)
 
-    def __post_init__(self) -> None:
-        self.topics = self._list_topics()
-        self.materials = self._list_materials()
-        self.assignments = self._list_assignments()
+    def populate(self, service) -> None:
+        self.topics = self._list_topics(service)
+        self.materials = self._list_materials(service)
+        self.assignments = self._list_assignments(service)
 
     def find_topic(self, name: str | None) -> GCTopic | None:
         if name is None: return None
 
         for topic in self.topics:
-            if topic.name == name:
+            if topic["name"] == name:
                 return topic
 
         return None
 
-    def _list_topics(self) -> list[GCTopic]:
+    def _list_topics(self, service) -> list[GCTopic]:
         # NOTE: (Link) https://developers.google.com/workspace/classroom/reference/rest/v1/courses.topics/list
 
         try:
-            results = GC_SERVICE.courses().topics().list(
+            results = service.courses().topics().list(
                 courseId=self.info.id
             ).execute()
         except HttpError as error:
             print(f"An HTTP error occurred: {error}")
 
-        if "topic" not in results.keys():
-            return []
+        return results.get("topic", [])
 
-        output: list[GCTopic] = []
-        for topic in results["topic"]:
-            output.append(GCTopic(
-                name=topic["name"],
-            ))
-
-        return output
-
-    def _list_materials(self) -> list[GCMaterial]:
+    def _list_materials(self, service) -> list[GCMaterial]:
         # NOTE: (Link) https://developers.google.com/workspace/classroom/reference/rest/v1/courses.courseWorkMaterials/list
 
         try:
-            results = GC_SERVICE.courses().courseWorkMaterials().list(
+            results = service.courses().courseWorkMaterials().list(
                 courseId=self.info.id,
                 # asc - ascending order
                 # desc - descending order
@@ -217,34 +130,13 @@ class GCCourse:
         except HttpError as error:
             print(f"An HTTP error occurred: {error}")
 
-        if "courseWorkMaterial" not in results.keys():
-            return []
+        return results.get("courseWorkMaterial", [])
 
-        output: list[GCMaterial] = []
-        for material in results["courseWorkMaterial"]:
-            desc: str | None = None
-            if "description" in material:
-                desc = material["description"]
-
-            topic_id: str | None = None
-            if "topicId" in material:
-                topic_id = material["topicId"]
-
-            output.append(GCMaterial(
-                title=material["title"],
-                description=desc,
-                state=material["state"],
-                topicId=topic_id,
-                materials=material["materials"]
-            ))
-
-        return output
-
-    def _list_assignments(self) -> list[GCAssignment]:
+    def _list_assignments(self, service) -> list[GCAssignment]:
         # NOTE: (Link) https://developers.google.com/workspace/classroom/reference/rest/v1/courses.courseWork/list
 
         try:
-            results = GC_SERVICE.courses().courseWork().list(
+            results = service.courses().courseWork().list(
                 courseId=self.info.id,
                 # asc - ascending order
                 # desc - descending order
@@ -254,63 +146,15 @@ class GCCourse:
         except HttpError as error:
             print(f"An HTTP error occurred: {error}")
 
-        if "courseWork" not in results.keys():
-            return []
-
-        output: list[GCAssignment] = []
-        for assignment in results["courseWork"]:
-            max_pts: str | None = None
-            if "maxPoints" in assignment:
-                max_pts = assignment["maxPoints"]
-
-            desc: str | None = None
-            if "description" in assignment:
-                desc = assignment["description"]
-
-            topic_id: str | None = None
-            if "topicId" in assignment:
-                topic_id = assignment["topicId"]
-
-            assign_detail: GCAssignmentDetail | None = None
-            if "assignment" in assignment:
-                assign_detail = assignment["assignment"]
-
-            mcq: GCAssignmentMCDetail | None = None
-            if "multipleChoiceQuestion" in assignment:
-                mcq = assignment["multipleChoiceQuestion"]
-
-            mats: list[GCMaterialItem] | None = None
-            if "materials" in assignment:
-                mats = assignment["materials"]
-
-            due_date: GCDate | None = None
-            if "dueDate" in assignment:
-                mats = assignment["dueDate"]
-
-            due_time: GCTimeOfDay | None = None
-            if "dueTime" in assignment:
-                due_time = assignment["dueTime"]
-
-            output.append(GCAssignment(
-                title=assignment["title"],
-                state=assignment["state"],
-                workType=assignment["workType"],
-
-                dueDate=due_date,
-                dueTime=due_time,
-                materials=mats,
-                maxPoints=max_pts,
-                description=desc,
-                assignment=assign_detail,
-                multipleChoiceQuestion=mcq
-            ))
-
-        return output
+        return results.get("courseWork", [])
 
 
 class GCWrapper:
     def __init__(self, import_path: str | None = None) -> None:
-        self._service = GC_SERVICE
+        print("[INFO] Setting up Google classroom API service...")
+        self._service = gservice_setup()
+        print("[DEBUG] Done setting up Classroom service...")
+
         self._courses: dict[GCId, GCCourse] = {}
         self._import_path: str | None = None
 
@@ -331,13 +175,13 @@ class GCWrapper:
                 course_info = GCCourseInfo(**course["info"])
                 self._courses[course_id] = GCCourse(
                     info=course_info,
-                    topics=[GCTopic(**ti) for ti in course["topics"]],
-                    materials=[GCMaterial(**mi) for mi in course["materials"]],
-                    assignments=[GCAssignment(**ai) for ai in course["assignments"]],
+                    topics=course["topics"],
+                    materials=course["materials"],
+                    assignments=course["assignments"],
                 )
 
-    def __getitem__(self, key: str) -> GCCourse:
-        assert isinstance(key, str)
+    def __getitem__(self, key: GCId) -> GCCourse:
+        assert isinstance(key, GCId)
         return self._courses[key]
 
     def _list_courses(self) -> dict[GCId, GCCourse]:
@@ -359,7 +203,7 @@ class GCWrapper:
 
         output: dict[GCId, GCCourse] = {}
         for course in results["courses"]:
-            output[course["id"]] = GCCourse(
+            c = GCCourse(
                 info=GCCourseInfo(
                     id=course["id"],
                     name=course["name"],
@@ -367,6 +211,10 @@ class GCWrapper:
                     courseState=course["courseState"]
                 )
             )
+
+            c.populate(self._service)
+
+            output[course["id"]] = c
 
         return output
 
@@ -377,20 +225,59 @@ class GCWrapper:
 
         return None
 
-    def create_assignment_v2(self, course_id: str, assignment: GCAssignment) -> None:
+    def create_course(self, name: str, owner_id: str = "me") -> GCId:
+        in_info = { "name": name, "ownerId": owner_id }
+
+        try:
+            results = self._service.courses().create(body=in_info).execute()
+        except HttpError as error:
+            print(f"An HTTP error occurred: {error}")
+            assert False
+
+        new_course_id = results["id"]
+        self._courses[new_course_id] = GCCourse(
+            info=GCCourseInfo(
+                id=new_course_id,
+                name=results["name"],
+                enrollmentCode=results["enrollmentCode"],
+                courseState=results["courseState"],
+            )
+        )
+
+        return new_course_id
+
+    def create_assignment_v2(self, course_id: GCId, assignment: GCAssignment) -> None:
         try:
             results = self._service.courses().courseWork().create(
-                courseId=course_id, body=assignment.to_dict()).execute()
+                courseId=course_id, body=assignment).execute()
         except HttpError as error:
             print(f"An HTTP error occurred: {error}")
 
-    def create_material_v2(self, course_id: str, material: GCMaterial) -> None:
+        self[course_id].assignments.append(results)
+
+    def create_material_v2(self, course_id: GCId, material: GCMaterial) -> None:
         try:
             results = self._service.courses().courseWorkMaterials().create(
-                courseId=course_id, body=material.to_dict()).execute()
+                courseId=course_id, body=material).execute()
         except HttpError as error:
-            print(f"An HTTP error occurred: {error}")
+            assert False, f"An HTTP error occurred: {error}"
 
+        self[course_id].materials.append(results)
+
+    def create_topic(self,
+        course_id: GCId, topic: GCTopic, skip_if_exists: bool = True
+    ) -> None:
+        if skip_if_exists:
+            for c_topic in self[course_id].topics:
+                if c_topic["name"] == topic["name"]: return
+
+        try:
+            results = self._service.courses().topics().create(
+                courseId=course_id, body=topic).execute()
+        except HttpError as error:
+            assert False, f"An HTTP error occurred: {error}"
+
+        self[course_id].topics.append(results)
 
     def export_all_info(self) -> None:
         now = datetime.now()
@@ -407,37 +294,3 @@ class GCWrapper:
             }
             json.dump(out_dict, f, indent=4)
 
-
-# =================================================================
-#          ---------------- DEPRECATED ----------------
-# =================================================================
-# class GDWrapper:
-#     def __init__(self) -> None:
-#         self._service = GD_SERVICE
-#
-#     def find_file(self, name: str) -> str | None:
-#         """Search a file, if found, return file id.
-#
-#         *NOTE*: An exact name is required!!"""
-#         # TODO: [possible extension] Instead of requiring the exact file name, take advantage of
-#         # the search queries ('contains', 'filetype')
-#         try:
-#             results = self._service.files().list(
-#                 pageSize=10, spaces="drive", q=f"name = '{name}'",
-#                 fields="nextPageToken, files(id, name, parents)",
-#                 # NOTE: I hope this won't be a problem at some point
-#                 includeItemsFromAllDrives=False
-#             ).execute()
-#             n = len(results["files"])
-#             if n == 0:
-#                 # No results found
-#                 print(f"Found 0 files with name: '{name}'")
-#                 return None
-#
-#             if n > 1:
-#                 # Too many results found
-#                 print(f"Found {n} files with name: '{name}'")
-#
-#             return results["files"][0]["id"]
-#         except HttpError as error:
-#             print(f"An HTTP error occurred: {error}")
