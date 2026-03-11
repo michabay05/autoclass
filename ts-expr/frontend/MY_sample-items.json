@@ -1,0 +1,206 @@
+{
+    "info": {
+        "id": "215816991434",
+        "name": "Model Class",
+        "enrollmentCode": "6padmz2",
+        "courseState": "ARCHIVED"
+    },
+    "topics": [
+        {
+            "courseId": "215816991434",
+            "topicId": "845897909005",
+            "name": "Week 3"
+        },
+        {
+            "courseId": "215816991434",
+            "topicId": "845897306329",
+            "name": "Week 2"
+        },
+        {
+            "courseId": "215816991434",
+            "topicId": "838189610055",
+            "name": "Week 1"
+        }
+    ],
+    "materials": [
+        {
+            "courseId": "215816991434",
+            "id": "845897629843",
+            "title": "Lecture 1A",
+            "state": "PUBLISHED",
+            "materials": [
+                {
+                    "driveFile": {
+                        "driveFile": {
+                            "id": "1myXkzEaMueHKvwoKmszunMXW-spA8OJO",
+                            "title": "Types of reading and writing questions.pdf",
+                            "alternateLink": "https://drive.google.com/file/d/1myXkzEaMueHKvwoKmszunMXW-spA8OJO/view?usp=drive_web",
+                            "thumbnailUrl": "https://lh3.googleusercontent.com/drive-storage/AJQWtBPgBVN2nNy3C26scq96IlaXMvoxWyrv-mQXRUm09oydsQaua3Jdrim8hueia5kmwdxM1WDgC9J8xFx8v_D4PK0-J_fw6hxB9fcDrky41cxstIPc1w=s200"
+                        },
+                        "shareMode": "VIEW"
+                    }
+                }
+            ],
+            "topicId": "838189610055",
+            "description": null
+        },
+        {
+            "courseId": "215816991434",
+            "id": "845897244623",
+            "title": "Syllabus",
+            "state": "PUBLISHED",
+            "materials": [
+                {
+                    "driveFile": {
+                        "driveFile": {
+                            "id": "1ws4_lE_2eY5gsovE_u51XnxLd0uzyEgiJLlc8o1pv9E",
+                            "title": "Reaction Trainer ENGR Final Report ",
+                            "alternateLink": "https://docs.google.com/document/d/1ws4_lE_2eY5gsovE_u51XnxLd0uzyEgiJLlc8o1pv9E/edit?usp=drive_web",
+                            "thumbnailUrl": "https://lh3.google.com/drive-storage/AJQWtBO0W1ixuT9YXQ8uxTsIXLEDHFbfPNhpq2wBy8siFK11Ip-AX0SLKTTF3SXdGi5EAieBwDPviqmpU9ijWeqw3MSexRKSKiJN2DdZ3xkAE8Y1zHV5CzlAVv7zwBEoDifalJJQ6M_xUA=s200"
+                        },
+                        "shareMode": "VIEW"
+                    }
+                }
+            ],
+            "topicId": null,
+            "description": "(I could not find a document so I'm using this final project of mine)"
+        },
+        {
+            "courseId": "215816991434",
+            "id": "845897812364",
+            "title": "Lecture (Online) 2A",
+            "state": "PUBLISHED",
+            "materials": [
+                {
+                    "youtubeVideo": {
+                        "id": "NLz8CRdMvuI",
+                        "title": "Every SAT Grammar Rule in 15 Minutes",
+                        "alternateLink": "https://www.youtube.com/watch?v=NLz8CRdMvuI",
+                        "thumbnailUrl": "https://i.ytimg.com/vi/NLz8CRdMvuI/default.jpg"
+                    }
+                }
+            ],
+            "topicId": "845897306329",
+            "description": "Async class today. Watch this video to get the gist of the assignments for this week."
+        }
+    ],
+    "assignments": [
+        {
+            "courseId": "215816991434",
+            "id": "845895352244",
+            "title": "How are you doing?",
+            "state": "PUBLISHED",
+            "dueDate": null,
+            "dueTime": null,
+            "materials": null,
+            "maxPoints": 100,
+            "topicId": "838189610055",
+            "description": "Respond honestly",
+            "assignment": null,
+            "multipleChoiceQuestion": {
+                "choices": [
+                    "Great",
+                    "Eh",
+                    "Not so great"
+                ]
+            }
+        },
+        {
+            "courseId": "215816991434",
+            "id": "845897622621",
+            "title": "Homework 1A",
+            "state": "PUBLISHED",
+            "dueDate": null,
+            "dueTime": null,
+            "materials": [
+                {
+                    "youtubeVideo": {
+                        "id": "-pGNBb8M3LQ",
+                        "title": "The only SAT Math DESMOS Guide you'll ever need",
+                        "alternateLink": "https://www.youtube.com/watch?v=-pGNBb8M3LQ",
+                        "thumbnailUrl": "https://i.ytimg.com/vi/-pGNBb8M3LQ/default.jpg"
+                    }
+                }
+            ],
+            "maxPoints": 10,
+            "topicId": "838189610055",
+            "description": "Provide a list of 10 hacks you have found and hope will be helpful to you.",
+            "assignment": {
+                "studentWorkFolder": {
+                    "id": "1T5y517gtUmsc9bXcqLMzPkPPyM5AdYmaSxcettHL_zZWUOYnrJoccblclEpbg1ZtnglI1vHq"
+                }
+            },
+            "multipleChoiceQuestion": null
+        },
+        {
+            "courseId": "215816991434",
+            "id": "845897420786",
+            "title": "Homework 2A",
+            "state": "PUBLISHED",
+            "dueDate": null,
+            "dueTime": null,
+            "materials": [
+                {
+                    "driveFile": {
+                        "driveFile": {
+                            "id": "1bA1gRzLlt8A1CTfSgizTjkxwzWZRQxFaq1OajvyLaGA",
+                            "title": "Untitled spreadsheet",
+                            "alternateLink": "https://docs.google.com/spreadsheets/d/1bA1gRzLlt8A1CTfSgizTjkxwzWZRQxFaq1OajvyLaGA/edit?usp=drive_web",
+                            "thumbnailUrl": "https://lh3.google.com/drive-storage/AJQWtBMa232Oc6m5n03G4pMaIi8GP6V-bjnqqmOlHSnhDFfFWbOMnNOdvsGnxD4jTwSEwlmV8fFx-55WFz-OfsgWrJlnwrwq03aTrmIpQLpFqya9er1werL_nert0Durlu_9rbhSgURbUA=s200"
+                        },
+                        "shareMode": "VIEW"
+                    }
+                }
+            ],
+            "maxPoints": 100,
+            "topicId": "845897306329",
+            "description": "Parse this data and present your findings in at least\u00a0500\u00a0words in a google doc.\u00a0",
+            "assignment": {
+                "studentWorkFolder": {
+                    "id": "1o5MC1ViFg_2s9J3Ubr10NAGtCFhor-v7rvVUSkfHyHJdSll8ausQtZd5myIYme0nQUYxKpJh"
+                }
+            },
+            "multipleChoiceQuestion": null
+        },
+        {
+            "courseId": "215816991434",
+            "id": "845897951322",
+            "title": "Test 2A",
+            "state": "PUBLISHED",
+            "dueDate": null,
+            "dueTime": null,
+            "materials": [
+                {
+                    "form": {
+                        "formUrl": "https://docs.google.com/forms/d/1033WZ9fyMqcR8Q6NvSIe-yI0o8GK1cMRCRRbKAOkK94/edit",
+                        "title": "Blank Quiz",
+                        "thumbnailUrl": "https://lh6.googleusercontent.com/hSuLcEYx0Ru7Zm42H-75RrtBNlcVbXlCujNOPOMDvuF1vMT9jCl0d6f9SOfcPIKmNuhAKn2oI_6RtrA=w90-h90-p"
+                    }
+                }
+            ],
+            "maxPoints": 100,
+            "topicId": "845897306329",
+            "description": "Complete this quiz in class. You have 30 minutes maximum to complete this.",
+            "assignment": {
+                "studentWorkFolder": {
+                    "id": "1Tjqr0X4g-4QBr-IEB8qFLFWMu7G6d60J__Mq1kss1IlmNuqKdkX--zoosDKnhCgt15QYcKg5"
+                }
+            },
+            "multipleChoiceQuestion": null
+        },
+        {
+            "courseId": "215816991434",
+            "id": "845897545473",
+            "title": "How did the test go?",
+            "state": "DRAFT",
+            "dueDate": null,
+            "dueTime": null,
+            "materials": null,
+            "maxPoints": 100,
+            "topicId": "845897909005",
+            "description": "Be as detailed as possible. The more detail, the better we can help. Respond with at least\u00a0300\u00a0words.",
+            "assignment": null,
+            "multipleChoiceQuestion": null
+        }
+    ]
+}
