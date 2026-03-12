@@ -137,7 +137,7 @@ export default function CourseUpdate() {
     };
 
     return (
-        <div className="w-9/10 max-w-4xl mx-auto">
+        <>
             <div className="flex justify-between items-center my-3 p-2">
                 <div>
                     <h1 className="text-3xl font-bold">{props.name}</h1>
@@ -169,7 +169,7 @@ export default function CourseUpdate() {
                 })
             }
             </ReactSortable>
-        </div>
+        </>
     );
 }
 

@@ -20,4 +20,8 @@ const router = createBrowserRouter([
     },
 ]);
 
-render(<RouterProvider router={router} />, document.getElementById("app")!);
+render((
+    <div className="w-9/10 max-w-4xl mx-auto">
+        <RouterProvider router={router} />
+    </div>
+), document.getElementById("app")!);

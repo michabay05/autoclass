@@ -13,8 +13,6 @@ const SCOPE_LIST: string[] = [
     "profile", "email"
 ]
 
-
-
 passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID as string,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
@@ -24,12 +22,13 @@ passport.use(new GoogleStrategy({
 }, (accessToken: string, refreshToken: string, profile, cb) => {
     try {
         const user = {
-            name: profile.displayName,
+            name: profile._json.name,
+            email: profile._json.email,
             accessToken: accessToken,
             refreshToken: refreshToken
         };
 
-        // console.log("Profile:", profile);
+        console.log("Profile:", profile);
         return cb(null, user);
     } catch (error) {
         console.log("Strat error:", error);

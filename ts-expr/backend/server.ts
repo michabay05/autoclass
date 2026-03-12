@@ -66,7 +66,7 @@ const googleClassroomAuth = (req, res, next) => {
 app.get("/api/courses", googleClassroomAuth, async (req, res) => {
     try {
         const response = await req.classroom.courses.list({
-            pageSize: 10,
+            pageSize: 100,
         });
 
         const outCourses: Course[] = []
