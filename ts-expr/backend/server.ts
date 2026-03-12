@@ -5,7 +5,7 @@ import passport from "passport";
 import "./auth";
 import {saveTimingConf} from "./process";
 
-import type { Course } from "../common/types";
+import type { Course, TopicInfo } from "../common/types";
 import {
     CourseState, ItemKind, ItemState, getCourseState, getItemState
 } from "../common/types";
@@ -87,6 +87,32 @@ app.get("/api/courses", googleClassroomAuth, async (req, res) => {
     }
 });
 
+app.get("/api/topics/:courseId", googleClassroomAuth, async (req, res) => {
+    try {
+        const courseId = req.params.courseId;
+        const PAGE_SIZE = 150;
+        const responses = await req.classroom.courses.topics.list({
+            courseId: courseId,
+            pageSize: PAGE_SIZE,
+        });
+
+        const topics = responses?.data?.topic || [];
+        const outTopics: TopicInfo[] = [];
+        for (const topic of topics) {
+            outTopics.push({
+                courseId: courseId,
+                topicId: topic.topicId,
+                name: topic.name
+            });
+        }
+
+        res.json(outTopics);
+    } catch (error) {
+        console.error("Error fetching topic data:", error);
+        res.status(500).json({ error: "Error fetching topic data" });
+    }
+});
+
 app.get("/api/items/:courseId", googleClassroomAuth, async (req, res) => {
     try {
         const courseId = req.params.courseId;
@@ -142,12 +168,12 @@ app.get("/api/items/:courseId", googleClassroomAuth, async (req, res) => {
         res.json(combinedContent);
 
     } catch (error) {
-        console.error("Error fetching classroom data:", error);
-        res.status(500).json({ error: "Failed to fetch course content" });
+        console.error("Error fetching material and assignment data:", error);
+        res.status(500).json({ error: "Error fetching material and assignment data" });
     }
 });
 
-app.post("/api/items", googleClassroomAuth, async (req, res) => {
+app.post("/api/apply", googleClassroomAuth, async (req, res) => {
     console.log(req.body);
     await saveTimingConf(req.body, "ex.json");
     res.status(200).json({msg: "received body and save it"});

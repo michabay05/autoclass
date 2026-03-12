@@ -16,6 +16,12 @@ export const getCourseState = (stateStr: string): CourseState => {
     }
 }
 
+export interface TopicInfo {
+    courseId: string;
+    topicId: string;
+    name: string;
+}
+
 export enum ItemState { PUBLISHED, DRAFT, DELETED, UNKNOWN }
 export enum ItemKind { MATERIAL, ASSIGNMENT }
 export interface ItemInfo {
@@ -26,16 +32,6 @@ export interface ItemInfo {
     description: string;
     state: ItemState;
     creationTime: Date;
-}
-
-export const getItemKind = (kindStr: string): ItemKind => {
-    switch (kindStr.toUpperCase()) {
-        case "MATERIAL": return ItemKind.MATERIAL;
-        case "ASSIGNMENT": return ItemKind.ASSIGNMENT;
-        default:
-            console.error(`Unknown item kind: ${kindStr}`);
-            throw new Error()
-    }
 }
 
 export const getItemState = (stateStr: string): ItemState => {
@@ -49,15 +45,27 @@ export const getItemState = (stateStr: string): ItemState => {
     }
 }
 
+export const getItemKind = (kindStr: string): ItemKind => {
+    switch (kindStr.toUpperCase()) {
+        case "MATERIAL": return ItemKind.MATERIAL;
+        case "ASSIGNMENT": return ItemKind.ASSIGNMENT;
+        default:
+            console.error(`Unknown item kind: ${kindStr}`);
+            throw new Error()
+    }
+}
+
 export interface ExportItemInfo {
     item: ItemInfo;
     locked: boolean;
     timing: string;
 }
 
-export interface ExportTiming {
-    // TODO: the default action (assumption) to clone with modification
+export interface ExportTimings {
+    // NOTE: the default action (assumption) to clone with modification
+    // In the future, modifying existing items should be available as well
     courseId: string;
+    topics: Topic[];
     exportItems: ExportItemInfo[];
 }
 

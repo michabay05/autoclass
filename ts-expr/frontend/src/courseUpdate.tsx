@@ -4,7 +4,7 @@ import { ReactSortable } from "react-sortablejs";
 import { Book, GripHorizontal, Lock, ListChecks } from "lucide-react";
 import "./courseUpdate.css";
 
-import type { ItemInfo, ExportItemInfo } from "../../common/types";
+import type { ItemInfo, ExportItemInfo, TopicInfo } from "../../common/types";
 import { CourseState, ItemState, ItemKind, getItemState } from "../../common/types";
 
 interface ExportItemProps {
@@ -18,8 +18,16 @@ export default function CourseUpdate() {
     const props: Course = useLocation().state;
 
     const [exportItems, setExportItems] = useState<ExportItem[]>([]);
+    const [topics, setTopics] = useState<TopicInfo[]>([]);
 
     useEffect(() => {
+        const fetchTopics = async () => {
+            const res = await fetch(`/api/topics/${props.id}`,
+                {credentials: "include"});
+            const topics = await res.json();
+            setTopics(topics);
+        };
+
         const fetchItems = async () => {
             const res = await fetch(`/api/items/${props.id}`,
                 {credentials: "include"});
@@ -31,6 +39,7 @@ export default function CourseUpdate() {
             })));
         };
 
+        fetchTopics();
         fetchItems();
     }, [])
 
@@ -88,10 +97,12 @@ export default function CourseUpdate() {
 
         const body: ExportTimings = {
             courseId: props.id,
+            topics: topics,
             exportItems: exportItems
         };
+        console.log(body);
 
-        const response = await fetch("/api/items", {
+        const response = await fetch("/api/apply", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",

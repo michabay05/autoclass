@@ -1,5 +1,22 @@
 {
     "courseId": "215816991434",
+    "topics": [
+        {
+            "courseId": "215816991434",
+            "topicId": "845897909005",
+            "name": "Week 3"
+        },
+        {
+            "courseId": "215816991434",
+            "topicId": "845897306329",
+            "name": "Week 2"
+        },
+        {
+            "courseId": "215816991434",
+            "topicId": "838189610055",
+            "name": "Week 1"
+        }
+    ],
     "exportItems": [
         {
             "item": {
@@ -38,7 +55,7 @@
                 "creationTime": "2026-02-22T22:42:08.044Z"
             },
             "locked": true,
-            "timing": "2026-03-17"
+            "timing": "2026-03-18"
         },
         {
             "item": {
@@ -76,8 +93,8 @@
                 "state": "PUBLISHED",
                 "creationTime": "2026-02-22T22:38:26.736Z"
             },
-            "locked": true,
-            "timing": "2026-03-28"
+            "locked": false,
+            "timing": "1"
         },
         {
             "item": {
@@ -89,7 +106,7 @@
                 "creationTime": "2026-02-22T22:37:54.368Z"
             },
             "locked": false,
-            "timing": "1"
+            "timing": "2"
         },
         {
             "item": {
@@ -102,7 +119,7 @@
                 "creationTime": "2026-02-22T22:37:06.602Z"
             },
             "locked": false,
-            "timing": "2"
+            "timing": "3"
         }
     ]
 }

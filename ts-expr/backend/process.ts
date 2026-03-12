@@ -1,4 +1,4 @@
-import type { ExportTiming } from "../common/types";
+import type { ExportTimings } from "../common/types";
 import { ItemState, ItemKind, getItemState, getItemKind } from "../common/types";
 
 interface TimeDelta {
@@ -35,7 +35,7 @@ export const loadTimingConfig = async (path: string): ExportTimings => {
     const content = await timingFile.json();
 
     const exportItems: ExportItemInfo[] = [];
-    for (const eIt of content["exportItems"]) {
+    for (const eIt of content.exportItems) {
         exportItems.push({
             item: {
                 kind: getItemKind(eIt.item.kind),
@@ -51,13 +51,14 @@ export const loadTimingConfig = async (path: string): ExportTimings => {
         });
     }
 
-    const timing: ExportTiming = {};
-    timing["courseId"] = content["courseId"];
-    timing["exportItems"] = exportItems;
-    return timing;
+    const timings: ExportTimings = {};
+    timings["courseId"] = content["courseId"];
+    timings["topics"] = content["topics"]
+    timings["exportItems"] = exportItems;
+    return timings;
 };
 
-export const saveTimingConf = async (conf: ExportTiming, path: string) => {
+export const saveTimingConf = async (conf: ExportTimings, path: string) => {
     const outItems = []
     for (const eIt of conf.exportItems) {
         const {item, locked, timing} = eIt;
@@ -72,12 +73,13 @@ export const saveTimingConf = async (conf: ExportTiming, path: string) => {
         });
     }
 
-    const output = {
+    const output: ExportTimings = {
         "courseId": conf.courseId,
+        "topics": conf.topics,
         "exportItems": outItems
     };
     await Bun.write(path, JSON.stringify(output, null, 4));
 };
 
-const timing = await loadTimingConfig("MY_sample-timings.json");
-await saveTimingConf(timing, "s.json")
+// const timing = await loadTimingConfig("MY_sample-timings.json");
+// await saveTimingConf(timing, "s.json");
