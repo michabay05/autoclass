@@ -4,48 +4,51 @@ import { ReactSortable } from "react-sortablejs";
 import { Book, GripHorizontal, Lock, ListChecks } from "lucide-react";
 import "./courseUpdate.css";
 
-import type { ItemInfo, ExportItemInfo, TopicInfo } from "../../common/types";
-import { CourseState, ItemState, ItemKind, getItemState } from "../../common/types";
-
-interface ExportItemProps {
-    expItem: ExporItem,
-
-    toggleLocked: () => void;
-    updateTiming: (value: string) => boolean;
-}
+import type { ExportItemInfo } from "../../common/types";
+import { CourseState, ItemKind } from "../../common/types";
 
 export default function CourseUpdate() {
     const props: Course = useLocation().state;
 
-    const [exportItems, setExportItems] = useState<ExportItem[]>([]);
-    const [topics, setTopics] = useState<TopicInfo[]>([]);
+    const [exportItems, setExportItems] = useState<ExportItemInfo[]>([]);
+    const [rawItems, setRawItems] = useState([]);
 
     useEffect(() => {
-        const fetchTopics = async () => {
-            const res = await fetch(`/api/topics/${props.id}`,
+        const fetchRawItems = async () => {
+            const res = await fetch(`/api/rawItems/${props.id}`,
                 {credentials: "include"});
-            const topics = await res.json();
-            setTopics(topics);
+            const rItems = await res.json();
+            setRawItems(rItems);
+
+            const expItems: ExportItemInfo = [];
+            for (const mat of rItems.rawMaterials) {
+                expItems.push({
+                    kind: ItemKind.MATERIAL,
+                    itemId: mat.id,
+                    locked: false,
+                    timing: "",
+                });
+            }
+
+            for (const assign of rItems.rawAssignments) {
+                expItems.push({
+                    kind: ItemKind.ASSIGNMENT,
+                    itemId: assign.id,
+                    locked: false,
+                    timing: "",
+                });
+            }
+            console.log(expItems);
+
+            setExportItems(expItems);
         };
 
-        const fetchItems = async () => {
-            const res = await fetch(`/api/items/${props.id}`,
-                {credentials: "include"});
-            const items = await res.json();
-            setExportItems(items.map((it, i) => ({
-                item: it,
-                timing: "",
-                locked: false
-            })));
-        };
-
-        fetchTopics();
-        fetchItems();
+        fetchRawItems();
     }, [])
 
     const toggleLocked = (itemId: string) => {
         setExportItems(exportItems.map(eIt => {
-            if (eIt.item.id === itemId) return {...eIt, locked: !eIt.locked };
+            if (eIt.itemId === itemId) return {...eIt, locked: !eIt.locked };
             else return eIt;
         }));
     };
@@ -73,11 +76,31 @@ export default function CourseUpdate() {
         if (!isValidTiming(value)) return false;
 
         setExportItems(exportItems.map(eIt => {
-            if (eIt.item.id === itemId) return {...eIt, timing: value };
+            if (eIt.itemId === itemId) return {...eIt, timing: value };
             else return eIt;
         }));
 
         return true;
+    };
+
+    const getUsefulInfoFromRaw = (itemId: string, kind: ItemKind): object => {
+        let raw = [];
+        switch (kind) {
+            case ItemKind.MATERIAL  : raw = rawItems.rawMaterials; break;
+            case ItemKind.ASSIGNMENT: raw = rawItems.rawAssignments; break;
+        }
+
+        const info = {
+            title: "Unknown title",
+            state: "Unknown state"
+        };
+        for (const it of raw) {
+            if (it.id === itemId) {
+                info.title = it.title;
+                info.state = it.state;
+            }
+        }
+        return info;
     };
 
     const postExportItems = async () => {
@@ -97,7 +120,7 @@ export default function CourseUpdate() {
 
         const body: ExportTimings = {
             courseId: props.id,
-            topics: topics,
+            rawItems: rawItems,
             exportItems: exportItems
         };
         console.log(body);
@@ -135,10 +158,13 @@ export default function CourseUpdate() {
             >
             {
                 exportItems.map(eIt => {
-                    return <Item key={eIt.item.id} expItem={eIt}
-                        toggleLocked={() => toggleLocked(eIt.item.id)}
+                    const {title, state} = getUsefulInfoFromRaw(
+                        eIt.itemId, eIt.kind);
+                    return <Item key={eIt.itemId} expItem={eIt}
+                        title={title} state={state}
+                        toggleLocked={() => toggleLocked(eIt.itemId)}
                         updateTiming={(value: string) => updateTiming(
-                            eIt.item.id, value)}
+                            eIt.itemId, value)}
                     />;
                 })
             }
@@ -147,15 +173,23 @@ export default function CourseUpdate() {
     );
 }
 
-function Item({expItem, toggleLocked, updateTiming}: ExportItemProps) {
-    const {item, locked, timing} = expItem;
-    const state = ItemState[item.state];
+interface ExportItemProps {
+    expItem: ExporItem;
+    title: string;
+    state: string;
+
+    toggleLocked: () => void;
+    updateTiming: (value: string) => boolean;
+}
+
+function Item({expItem, title, state, toggleLocked, updateTiming}: ExportItemProps) {
+    const {itemId, kind, locked, timing} = expItem;
 
     const style = {
         fill: "bg-blue-400",
         bord: "border-blue-600"
     };
-    if (item.kind === ItemKind.MATERIAL) {
+    if (kind === ItemKind.MATERIAL) {
         style.fill = "bg-green-500";
         style.bord = "border-green-700";
     }
@@ -166,10 +200,10 @@ function Item({expItem, toggleLocked, updateTiming}: ExportItemProps) {
             {/* Left */}
             <div className="flex items-center w-3/10">
                 <span className="mr-4">
-                    { item.kind === ItemKind.MATERIAL ? (<Book />) : (<ListChecks />) }
+                    { kind === ItemKind.MATERIAL ? (<Book />) : (<ListChecks />) }
                 </span>
                 <div>
-                    <p>{item.title}</p>
+                    <p>{title}</p>
                     <span className={`w-auto border-3 rounded-3xl px-1 text-xs`}>
                         {state}</span>
                 </div>

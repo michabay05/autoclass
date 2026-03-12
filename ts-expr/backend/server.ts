@@ -3,11 +3,11 @@ import session from "express-session";
 import {google} from "googleapis";
 import passport from "passport";
 import "./auth";
-import {saveTimingConf} from "./process";
+import {applyChanges} from "./process";
 
-import type { Course, TopicInfo } from "../common/types";
+import type { Course } from "../common/types";
 import {
-    CourseState, ItemKind, ItemState, getCourseState, getItemState
+    CourseState, ItemKind, getCourseState
 } from "../common/types";
 
 const app = express();
@@ -87,40 +87,19 @@ app.get("/api/courses", googleClassroomAuth, async (req, res) => {
     }
 });
 
-app.get("/api/topics/:courseId", googleClassroomAuth, async (req, res) => {
+app.get("/api/rawItems/:courseId", googleClassroomAuth, async (req, res) => {
     try {
-        const courseId = req.params.courseId;
-        const PAGE_SIZE = 150;
-        const responses = await req.classroom.courses.topics.list({
-            courseId: courseId,
-            pageSize: PAGE_SIZE,
-        });
+        const courseId: string = req.params.courseId;
+        // NOTE: I made this higher because I don't want to deal with
+        // pagination and next page tokens
+        const PAGE_SIZE: number = 250;
+        const states: string[] = ["PUBLISHED", "DRAFT"]; // Ignoring "DELETED"
 
-        const topics = responses?.data?.topic || [];
-        const outTopics: TopicInfo[] = [];
-        for (const topic of topics) {
-            outTopics.push({
+        const [topicsRes, courseWorkRes, materialsRes] = await Promise.all([
+            req.classroom.courses.topics.list({
                 courseId: courseId,
-                topicId: topic.topicId,
-                name: topic.name
-            });
-        }
-
-        res.json(outTopics);
-    } catch (error) {
-        console.error("Error fetching topic data:", error);
-        res.status(500).json({ error: "Error fetching topic data" });
-    }
-});
-
-app.get("/api/items/:courseId", googleClassroomAuth, async (req, res) => {
-    try {
-        const courseId = req.params.courseId;
-        const PAGE_SIZE = 150;
-        const states = ["PUBLISHED", "DRAFT"]; // Ignoring "DELETED"
-
-        // 1. Fetch Assignments and Materials concurrently
-        const [courseWorkRes, materialsRes] = await Promise.all([
+                pageSize: PAGE_SIZE,
+            }),
             req.classroom.courses.courseWork.list({
                 courseId: courseId,
                 pageSize: PAGE_SIZE,
@@ -133,50 +112,19 @@ app.get("/api/items/:courseId", googleClassroomAuth, async (req, res) => {
             })
         ]);
 
-        // 2. Safely extract the data (fixing that original undefined error!)
-        const rawAssignments = courseWorkRes?.data?.courseWork || [];
-        const rawMaterials = materialsRes?.data?.courseWorkMaterial || [];
-
-        // 3. Normalize Assignments
-        const assignments = rawAssignments.map(item => ({
-            kind: ItemKind.ASSIGNMENT,
-            courseId: item.courseId,
-            id: item.id,
-            title: item.title,
-            description: item.description,
-            state: getItemState(item.state),
-            creationTime: new Date(item.creationTime),
-        }));
-
-        // 4. Normalize Materials
-        const materials = rawMaterials.map(mat => ({
-            kind: ItemKind.MATERIAL,
-            courseId: mat.courseId,
-            id: mat.id,
-            title: mat.title,
-            description: mat.description,
-            state: getItemState(mat.state),
-            creationTime: new Date(mat.creationTime),
-        }));
-
-        // 5. Merge and sort by creation time (newest first)
-        const combinedContent = [...assignments, ...materials].sort(
-            (a, b) => b.creationTime - a.creationTime
-        );
-
-        // 6. Send to the client
-        res.json(combinedContent);
-
+        res.json({
+            rawTopics: topicsRes?.data?.topic || [],
+            rawAssignments: courseWorkRes?.data?.courseWork || [],
+            rawMaterials: materialsRes?.data?.courseWorkMaterial || [],
+        })
     } catch (error) {
-        console.error("Error fetching material and assignment data:", error);
-        res.status(500).json({ error: "Error fetching material and assignment data" });
+        console.error("Error fetching topic data:", error);
+        res.status(500).json({ error: "Error fetching topic data" });
     }
 });
 
 app.post("/api/apply", googleClassroomAuth, async (req, res) => {
-    console.log(req.body);
-    await saveTimingConf(req.body, "ex.json");
-    res.status(200).json({msg: "received body and save it"});
+    await applyChanges(req.classroom, req.body);
 });
 
 app.listen(3000, () => {
