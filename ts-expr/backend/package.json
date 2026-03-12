@@ -3,6 +3,9 @@
     "module": "server.ts",
     "type": "module",
     "private": true,
+    "scripts": {
+        "devCheck": "bunx tsc --noEmit && bun run server.ts"
+    },
     "devDependencies": {
         "@types/bun": "latest"
     },
@@ -18,3 +21,4 @@
         "passport-google-oauth20": "^2.0.0"
     }
 }
+

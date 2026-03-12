@@ -1,9 +1,4 @@
-export enum CourseState {
-    Active,
-    Archived,
-    Declined
-}
-
+export enum CourseState { ACTIVE, ARCHIVED, DECLINED }
 export interface Course {
     id: string;
     name: string;
@@ -13,26 +8,17 @@ export interface Course {
 }
 
 export const getCourseState = (stateStr: string): CourseState => {
-    switch (stateStr) {
-        case "ACTIVE"  : return CourseState.Active;
-        case "ARCHIVED": return CourseState.Archived;
-        case "DECLINED": return CourseState.Declined;
-        default: throw new Error(`Unknown state str: ${stateStr}`);
+    switch (stateStr.toUpperCase()) {
+        case "ACTIVE"  : return CourseState.ACTIVE;
+        case "ARCHIVED": return CourseState.ARCHIVED;
+        case "DECLINED": return CourseState.DECLINED;
+        default: throw new Error(`Unknown course state str: ${stateStr}`);
     }
 }
 
-export enum ItemState {
-    Published,
-    Draft,
-    Deleted
-}
-
-export enum ItemKind {
-    Material,
-    Assignment
-}
-
-export interface Item {
+export enum ItemState { PUBLISHED, DRAFT, DELETED, UNKNOWN }
+export enum ItemKind { MATERIAL, ASSIGNMENT }
+export interface ItemInfo {
     kind: ItemKind;
     courseId: string;
     id: string;
@@ -42,11 +28,36 @@ export interface Item {
     creationTime: Date;
 }
 
-export const getItemState = (itemStateStr: string): ItemState => {
-    switch (itemStateStr) {
-        case "PUBLISHED": return ItemState.Published;
-        case "DRAFT": return ItemState.Draft;
-        case "DELETED": return ItemState.Deleted;
-        default: throw new Error(`Unknown item state str: ${itemStateStr}`)
+export const getItemKind = (kindStr: string): ItemKind => {
+    switch (kindStr.toUpperCase()) {
+        case "MATERIAL": return ItemKind.MATERIAL;
+        case "ASSIGNMENT": return ItemKind.ASSIGNMENT;
+        default:
+            console.error(`Unknown item kind: ${kindStr}`);
+            throw new Error()
     }
 }
+
+export const getItemState = (stateStr: string): ItemState => {
+    switch (stateStr.toUpperCase()) {
+        case "PUBLISHED": return ItemState.PUBLISHED;
+        case "DRAFT"    : return ItemState.DRAFT;
+        case "DELETED"  : return ItemState.DELETED;
+        default:
+            console.error(`Unknown item state: ${stateStr}`);
+            return ItemState.UNKNOWN;
+    }
+}
+
+export interface ExportItemInfo {
+    item: ItemInfo;
+    locked: boolean;
+    timing: string;
+}
+
+export interface ExportTiming {
+    // TODO: the default action (assumption) to clone with modification
+    courseId: string;
+    exportItems: ExportItemInfo[];
+}
+

@@ -43,7 +43,7 @@ export default function CoursesList() {
 const CourseItem = (props: Course) => {
     return <div>
         <Link to={`/courses/${props.id}`} state={props}>
-            {`Id: ${props.id} | ${props.name} | ${props.state}`}
+            {`Id: ${props.id} | ${props.name} | ${CourseState[props.state]}`}
         </Link>
     </div>
 };

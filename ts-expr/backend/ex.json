@@ -1,0 +1,108 @@
+{
+    "courseId": "215816991434",
+    "exportItems": [
+        {
+            "item": {
+                "kind": "ASSIGNMENT",
+                "courseId": "215816991434",
+                "id": "845897545473",
+                "title": "How did the test go?",
+                "description": "Be as detailed as possible. The more detail, the better we can help. Respond with at least 300 words.",
+                "state": "DRAFT",
+                "creationTime": "2026-02-22T22:44:46.510Z"
+            },
+            "locked": false,
+            "timing": "1"
+        },
+        {
+            "item": {
+                "kind": "ASSIGNMENT",
+                "courseId": "215816991434",
+                "id": "845897951322",
+                "title": "Test 2A",
+                "description": "Complete this quiz in class. You have 30 minutes maximum to complete this.",
+                "state": "PUBLISHED",
+                "creationTime": "2026-02-22T22:43:55.294Z"
+            },
+            "locked": false,
+            "timing": "2"
+        },
+        {
+            "item": {
+                "kind": "ASSIGNMENT",
+                "courseId": "215816991434",
+                "id": "845897420786",
+                "title": "Homework 2A",
+                "description": "Parse this data and present your findings in at least 500 words in a google doc. ",
+                "state": "PUBLISHED",
+                "creationTime": "2026-02-22T22:42:08.044Z"
+            },
+            "locked": true,
+            "timing": "2026-03-17"
+        },
+        {
+            "item": {
+                "kind": "MATERIAL",
+                "courseId": "215816991434",
+                "id": "845897812364",
+                "title": "Lecture (Online) 2A",
+                "description": "Async class today. Watch this video to get the gist of the assignments for this week.",
+                "state": "PUBLISHED",
+                "creationTime": "2026-02-22T22:41:42.298Z"
+            },
+            "locked": false,
+            "timing": "2"
+        },
+        {
+            "item": {
+                "kind": "ASSIGNMENT",
+                "courseId": "215816991434",
+                "id": "845897622621",
+                "title": "Homework 1A",
+                "description": "Provide a list of 10 hacks you have found and hope will be helpful to you.",
+                "state": "PUBLISHED",
+                "creationTime": "2026-02-22T22:38:56.040Z"
+            },
+            "locked": false,
+            "timing": "3"
+        },
+        {
+            "item": {
+                "kind": "MATERIAL",
+                "courseId": "215816991434",
+                "id": "845897244623",
+                "title": "Syllabus",
+                "description": "(I could not find a document so I'm using this final project of mine)",
+                "state": "PUBLISHED",
+                "creationTime": "2026-02-22T22:38:26.736Z"
+            },
+            "locked": true,
+            "timing": "2026-03-28"
+        },
+        {
+            "item": {
+                "kind": "MATERIAL",
+                "courseId": "215816991434",
+                "id": "845897629843",
+                "title": "Lecture 1A",
+                "state": "PUBLISHED",
+                "creationTime": "2026-02-22T22:37:54.368Z"
+            },
+            "locked": false,
+            "timing": "1"
+        },
+        {
+            "item": {
+                "kind": "ASSIGNMENT",
+                "courseId": "215816991434",
+                "id": "845895352244",
+                "title": "How are you doing?",
+                "description": "Respond honestly",
+                "state": "PUBLISHED",
+                "creationTime": "2026-02-22T22:37:06.602Z"
+            },
+            "locked": false,
+            "timing": "2"
+        }
+    ]
+}

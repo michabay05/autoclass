@@ -3,14 +3,9 @@ import { useLocation } from "react-router";
 import { ReactSortable } from "react-sortablejs";
 import { Book, GripHorizontal, Lock, ListChecks } from "lucide-react";
 import "./courseUpdate.css";
-import type { Item } from "../../common/types";
-import { ItemState, ItemKind } from "../../common/types";
 
-interface ExportItem {
-    item: Item,
-    timing: string;
-    locked: boolean
-}
+import type { ItemInfo, ExportItemInfo } from "../../common/types";
+import { CourseState, ItemState, ItemKind, getItemState } from "../../common/types";
 
 interface ExportItemProps {
     expItem: ExporItem,
@@ -18,7 +13,6 @@ interface ExportItemProps {
     toggleLocked: () => void;
     updateTiming: (value: string) => boolean;
 }
-
 
 export default function CourseUpdate() {
     const props: Course = useLocation().state;
@@ -77,11 +71,53 @@ export default function CourseUpdate() {
         return true;
     };
 
-    // console.log(exportItems);
+    const postExportItems = async () => {
+        const allComplete = (): boolean => {
+            for (const eIt of exportItems) {
+                if (eIt.timing.length === 0) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        if (!allComplete()) {
+            alert("Ensure that you have filled out all timings before exporting");
+            return;
+        }
+
+        const body: ExportTimings = {
+            courseId: props.id,
+            exportItems: exportItems
+        };
+
+        const response = await fetch("/api/items", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(body),
+        });
+        const resJSON = await response.json();
+        console.log(resJSON);
+    };
 
     return (
-        <>
-            <p>Course with id: {props.id}</p>
+        <div className="w-9/10 max-w-4xl mx-auto">
+            <div className="flex justify-between items-center my-3 p-2">
+                <div>
+                    <h1 className="text-3xl font-bold">{props.name}</h1>
+                    <h2 className="text-md">State: {CourseState[props.state]}</h2>
+                </div>
+
+                <div>
+                    <button onClick={postExportItems}
+                        className="bg-red-400 px-7 py-3 rounded cursor-pointer">
+                       Export
+                    </button>
+                </div>
+            </div>
+
             <ReactSortable
                 list={exportItems} setList={setExportItems} handle=".handle-grip"
                 className="flex flex-col items-center" animation={250}
@@ -96,25 +132,20 @@ export default function CourseUpdate() {
                 })
             }
             </ReactSortable>
-        </>
+        </div>
     );
 }
 
 function Item({expItem, toggleLocked, updateTiming}: ExportItemProps) {
     const {item, locked, timing} = expItem;
-
-    let state = "UNKNOWN";
-    switch (item.state) {
-        case ItemState.Published: state = "PUBLISHED"; break;
-        case ItemState.Draft    : state = "DRAFT"; break;
-    }
+    const state = ItemState[item.state];
 
     const style = {
-        fill: "bg-blue-600",
-        bord: "border-blue-800"
+        fill: "bg-blue-400",
+        bord: "border-blue-600"
     };
-    if (item.kind === ItemKind.Material) {
-        style.fill = "bg-green-600";
+    if (item.kind === ItemKind.MATERIAL) {
+        style.fill = "bg-green-500";
         style.bord = "border-green-700";
     }
 
@@ -124,13 +155,12 @@ function Item({expItem, toggleLocked, updateTiming}: ExportItemProps) {
             {/* Left */}
             <div className="flex items-center w-3/10">
                 <span className="mr-4">
-                    { item.kind === ItemKind.Material
-                            ? (<Book />)
-                            : (<ListChecks />) }
+                    { item.kind === ItemKind.MATERIAL ? (<Book />) : (<ListChecks />) }
                 </span>
                 <div>
                     <p>{item.title}</p>
-                    <span className={`w-auto border-3 rounded-3xl px-1 text-xs`}>{state}</span>
+                    <span className={`w-auto border-3 rounded-3xl px-1 text-xs`}>
+                        {state}</span>
                 </div>
             </div>
 

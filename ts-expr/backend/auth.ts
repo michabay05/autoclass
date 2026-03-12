@@ -13,13 +13,15 @@ const SCOPE_LIST: string[] = [
     "profile", "email"
 ]
 
+
+
 passport.use(new GoogleStrategy({
-    clientID: process.env.GOOGLE_CLIENT_ID,
-    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: process.env.GOOGLE_REDIRECT_URI,
+    clientID: process.env.GOOGLE_CLIENT_ID as string,
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
+    callbackURL: process.env.GOOGLE_REDIRECT_URI as string,
     scope: SCOPE_LIST,
     state: true,
-}, (accessToken, refreshToken, profile, cb) => {
+}, (accessToken: string, refreshToken: string, profile, cb) => {
     try {
         const user = {
             name: profile.displayName,
