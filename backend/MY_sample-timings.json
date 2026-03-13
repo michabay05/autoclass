@@ -1,0 +1,27 @@
+{
+    "courseId": "215816991434",
+    "exportItems": [
+        {
+            "item": {
+                "kind": "material",
+                "id": "some_id_1",
+                "title": "Lecture 2A",
+                "description": null,
+                "state": "PUBLISHED"
+            },
+            "locked": false,
+            "timing": "1"
+        },
+        {
+            "item": {
+                "kind": "assignment",
+                "id": "some_id_2",
+                "title": "Homework 2A",
+                "description": null,
+                "state": "DRAFT"
+            },
+            "locked": false,
+            "timing": "2"
+        }
+    ]
+}
