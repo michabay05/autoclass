@@ -7,10 +7,19 @@ import "./courseUpdate.css";
 import type { ExportItemInfo } from "../../common/types";
 import { CourseState, ItemKind } from "../../common/types";
 
+interface ExpMetaData {
+    title: string;
+    state: string;
+    creationTime: string;
+}
+
+type ExpIdMetaMap = Record<string, ExpMetaData>;
+
 export default function CourseUpdate() {
     const props: Course = useLocation().state;
 
     const [exportItems, setExportItems] = useState<ExportItemInfo[]>([]);
+    const [expMetaData, setExpMetaData] = useState<ExpIdMetaMap>({});
     const [rawItems, setRawItems] = useState([]);
 
     useEffect(() => {
@@ -20,7 +29,8 @@ export default function CourseUpdate() {
             const rItems = await res.json();
             setRawItems(rItems);
 
-            const expItems: ExportItemInfo = [];
+            const expItems: ExportItemInfo[] = [];
+            const expMetas: ExpIdMetaMap = {};
             for (const mat of rItems.rawMaterials) {
                 expItems.push({
                     kind: ItemKind.MATERIAL,
@@ -28,6 +38,9 @@ export default function CourseUpdate() {
                     locked: false,
                     timing: "",
                 });
+
+                expMetas[mat.id] = getExpMetaFromRaw(
+                    rItems, mat.id, ItemKind.MATERIAL);
             }
 
             for (const assign of rItems.rawAssignments) {
@@ -37,14 +50,50 @@ export default function CourseUpdate() {
                     locked: false,
                     timing: "",
                 });
-            }
-            console.log(expItems);
 
+                expMetas[assign.id] = getExpMetaFromRaw(
+                    rItems, assign.id, ItemKind.ASSIGNMENT);
+            }
+            setExpMetaData(expMetas);
+
+            expItems.sort((a, b) => {
+                const aTime = expMetas[a.itemId].creationTime.getTime();
+                const bTime = expMetas[b.itemId].creationTime.getTime();
+                // // Most recent to oldest
+                // return bTime - aTime;
+                // Oldest to most recent
+                return bTime - aTime;
+            });
             setExportItems(expItems);
         };
 
         fetchRawItems();
-    }, [])
+    }, []);
+
+    const getExpMetaFromRaw = (
+        rawItems: object, itemId: string, kind: ItemKind
+    ): ExpMetaData => {
+        let raw = [];
+        switch (kind) {
+            case ItemKind.MATERIAL  : raw = rawItems.rawMaterials; break;
+            case ItemKind.ASSIGNMENT: raw = rawItems.rawAssignments; break;
+        }
+
+        const info: ExpMetaData = {
+            title: "Unknown title",
+            state: "Unknown state",
+            creationTime: null
+        };
+        for (const it of raw) {
+            if (it.id === itemId) {
+                info.title = it.title;
+                info.state = it.state;
+                info.creationTime = new Date(it.creationTime);
+                break;
+            }
+        }
+        return info;
+    };
 
     const toggleLocked = (itemId: string) => {
         setExportItems(exportItems.map(eIt => {
@@ -81,26 +130,6 @@ export default function CourseUpdate() {
         }));
 
         return true;
-    };
-
-    const getUsefulInfoFromRaw = (itemId: string, kind: ItemKind): object => {
-        let raw = [];
-        switch (kind) {
-            case ItemKind.MATERIAL  : raw = rawItems.rawMaterials; break;
-            case ItemKind.ASSIGNMENT: raw = rawItems.rawAssignments; break;
-        }
-
-        const info = {
-            title: "Unknown title",
-            state: "Unknown state"
-        };
-        for (const it of raw) {
-            if (it.id === itemId) {
-                info.title = it.title;
-                info.state = it.state;
-            }
-        }
-        return info;
     };
 
     const postExportItems = async () => {
@@ -158,10 +187,9 @@ export default function CourseUpdate() {
             >
             {
                 exportItems.map(eIt => {
-                    const {title, state} = getUsefulInfoFromRaw(
-                        eIt.itemId, eIt.kind);
+                    const meta = expMetaData[eIt.itemId];
                     return <Item key={eIt.itemId} expItem={eIt}
-                        title={title} state={state}
+                        title={meta.title} state={meta.state}
                         toggleLocked={() => toggleLocked(eIt.itemId)}
                         updateTiming={(value: string) => updateTiming(
                             eIt.itemId, value)}
@@ -228,7 +256,8 @@ function Item({expItem, title, state, toggleLocked, updateTiming}: ExportItemPro
                 >
                     <Lock />
                 </button>
-                <GripHorizontal className="cursor-grab handle-grip ml-5 active:scale-95" />
+                <GripHorizontal
+                    className="cursor-grab handle-grip ml-5 active:scale-95" />
             </div>
         </div>
     );
