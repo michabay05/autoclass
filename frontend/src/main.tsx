@@ -5,6 +5,8 @@ import CoursesList from "./coursesList";
 import CourseUpdate from "./courseUpdate";
 import LoginPage from "./loginPage";
 
+import "./main.css";
+
 const router = createBrowserRouter([
     {
         path: "/",

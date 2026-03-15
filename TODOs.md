@@ -1,3 +1,3 @@
 # TODOs
 - [ ] Add a logout button
-- [ ] Choose a sane default value for the relative time dates
+- [ ] Add a valid/invalid marking on the collapsible headers
