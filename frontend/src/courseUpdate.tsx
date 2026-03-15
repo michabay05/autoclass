@@ -185,21 +185,45 @@ export default function CourseUpdate() {
             return;
         }
 
+        const start = new Date("March 17, 2026 00:00:00");
+        const startDoW = start.getDay();
+        const eItems = [...exportItems];
+        for (let i = 0; i < eItems.length; i++) {
+            const contentDoW = Number.parseInt(
+                contentLabelConf[eItems[i].contentLabel]);
+            let weeks = Number.parseInt(timeLabelConf[eItems[i].timeLabel]) - 1;
+
+            let daysToPrevStartDoW;
+            if (contentDoW < startDoW) {
+                daysToPrevStartDoW = Math.abs(startDoW - contentDoW);
+                weeks--;
+            } else if (contentDoW > startDoW) {
+                daysToPrevStartDoW = -Math.abs(startDoW - contentDoW);
+            } else {
+                daysToPrevStartDoW = 0;
+            }
+
+            const dt = new Date(start.getTime());
+            dt.setDate(
+                dt.getDate() + weeks * 7 + contentDoW);
+            console.log(startDoW, daysToPrevStartDoW, weeks, contentDoW, dt);
+            eItems[i].timing = dt.toISOString();
+
+            eItems[i].locked = true;
+        }
+
+        console.log(eItems);
+
         const body: ExportTimings = {
             courseId: props.id,
             rawItems: rawItems,
-            exportItems: exportItems
+            exportItems: eItems,
         };
-
-        // TODO: remove the return below and implement it after you know how to implement this function with the new time and content labelling system
-        return;
         console.log(body);
 
         const response = await fetch("/api/apply", {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
+            headers: { "Content-Type": "application/json", },
             body: JSON.stringify(body),
         });
         const resJSON = await response.json();
@@ -497,8 +521,7 @@ function Item({
 
             {/* Right */}
             <div className="flex items-center">
-                <button onClick={toggleSelected}
-                    className="cursor-pointer">
+                <button onClick={toggleSelected} className="cursor-pointer">
                     {selected ? <X className="stroke-red-500" /> : <Plus />}
                 </button>
 
@@ -574,15 +597,24 @@ function ConfInput({kind, setValue, _className_}: ConfInputProps) {
     let _input_;
     switch (kind) {
         case LabelKind.TIME:
-            _input_ = <input
-                type="text" className={_className_}
+            _input_ = <input placeholder={"# of weeks from start"}
+                type="number" className={_className_}
                 onBlur={e => setValue(e.target.value)}
             />;
             break;
 
         case LabelKind.CONTENT:
-            _input_ = <DaysOfWeekSelect _className_={_className_}
-                action={(dow: DayOfWeek) => setValue(dow)} />;
+            _input_ = <input placeholder={"# of days from week start"}
+                type="number" className={_className_} min={0} max={6}
+                onBlur={e => {
+                    const n = Number.parseInt(e.target.value);
+                    if (0 <= n && n <= 6) {
+                        setValue(n);
+                    } else {
+                        alert("Content labels accept values from 0 to 6, inclusive");
+                        e.target.value = "";
+                    }
+                }} />;
             break;
     }
 

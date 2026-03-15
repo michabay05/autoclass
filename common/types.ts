@@ -33,6 +33,9 @@ export interface ExportItemInfo {
     itemId: string;
     locked: boolean;
     timing: string;
+
+    contentLabel: string;
+    timeLabel: string;
 }
 
 export interface ExportTimings {
