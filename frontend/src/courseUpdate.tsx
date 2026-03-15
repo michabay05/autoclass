@@ -22,7 +22,7 @@ type ContentLabelConf = Record<string, number | null>;
 const MAX_LABELS: number = 16;
 
 enum LabelKind { CONTENT, TIME }
-enum DayOfWeek { MON, TUE, WED, THU, FRI, SAT, SUN, NONE }
+enum DayOfWeek { SUN, MON, TUE, WED, THU, FRI, SAT, NONE }
 
 export default function CourseUpdate() {
     const props: Course = useLocation().state;
@@ -37,6 +37,7 @@ export default function CourseUpdate() {
 
     const [timeLabelConf, setTimeLabelConf] = useState<TimeLabelConf>({});
     const [contentLabelConf, setContentLabelConf] = useState<ContentLabelConf>({});
+    const [startDate, setStartDate] = useState<Date>(null);
 
     const [itemsAreValid, setItemsAreValid] = useState<boolean>(false);
     const [confIsValid, setConfIsValid] = useState<boolean>(false);
@@ -90,10 +91,14 @@ export default function CourseUpdate() {
         fetchRawItems();
     }, []);
 
+    const isTruthy = (x: any): boolean => {
+        return x ? true : false;
+    };
+
     useEffect(() => {
         let valid = true;
         exportItems.map(eIt => {
-            valid = valid && eIt.contentLabel && eIt.timeLabel;
+            valid = valid && isTruthy(eIt.contentLabel) && isTruthy(eIt.timeLabel);
         });
         setItemsAreValid(valid);
     }, [exportItems]);
@@ -101,21 +106,22 @@ export default function CourseUpdate() {
     useEffect(() => {
         let valid = true;
         valid = (timeLabels.length > 0) && (contentLabels.length > 0);
+        valid = valid && isTruthy(startDate);
 
         // I might not really need this but I will include it anyway
-        valid = (timeLabels.length === Object.keys(timeLabelConf).length)
+        valid = valid && (timeLabels.length === Object.keys(timeLabelConf).length)
                 && (contentLabels.length === Object.keys(contentLabelConf).length);
 
-        for (const timeLabel of timeLabels) {
-            valid = valid && timeLabelConf[timeLabel];
-        }
+        timeLabels.map(timeLabel => {
+            valid = valid && isTruthy(timeLabelConf[timeLabel]);
+        });
 
-        for (const contentLabel of contentLabels) {
-            valid = valid && contentLabelConf[contentLabel] && (
+        contentLabels.map(contentLabel => {
+            valid = valid && isTruthy(contentLabelConf[contentLabel]) && (
                 contentLabelConf[contentLabel] !== DayOfWeek.NONE);
-        }
+        });
         setConfIsValid(valid);
-    }, [timeLabels, contentLabels, timeLabelConf, contentLabelConf]);
+    }, [timeLabels, contentLabels, timeLabelConf, contentLabelConf, startDate]);
 
     const getExpMetaFromRaw = (
         rawItems: object, itemId: string, kind: ItemKind
@@ -185,34 +191,32 @@ export default function CourseUpdate() {
             return;
         }
 
-        const start = new Date("March 17, 2026 00:00:00");
-        const startDoW = start.getDay();
+        // const startDate = new Date("March 17, 2026 00:00:00");
+        const startDoW = startDate.getDay();
         const eItems = [...exportItems];
         for (let i = 0; i < eItems.length; i++) {
+            let weeks = Number.parseInt(timeLabelConf[eItems[i].timeLabel]);
             const contentDoW = Number.parseInt(
                 contentLabelConf[eItems[i].contentLabel]);
-            let weeks = Number.parseInt(timeLabelConf[eItems[i].timeLabel]) - 1;
-
-            let daysToPrevStartDoW;
-            if (contentDoW < startDoW) {
-                daysToPrevStartDoW = Math.abs(startDoW - contentDoW);
-                weeks--;
-            } else if (contentDoW > startDoW) {
-                daysToPrevStartDoW = -Math.abs(startDoW - contentDoW);
+            const diff = contentDoW - startDoW;
+            // const day = diff < 0 ? 7 + diff : diff;
+            let day;
+            if (diff < 0) {
+                day = 7 + diff;
             } else {
-                daysToPrevStartDoW = 0;
+                day = diff
+                weeks--;
             }
 
-            const dt = new Date(start.getTime());
-            dt.setDate(
-                dt.getDate() + weeks * 7 + contentDoW);
-            console.log(startDoW, daysToPrevStartDoW, weeks, contentDoW, dt);
+            const dt = new Date(startDate.getTime());
+            dt.setDate(dt.getDate() + (weeks-1) * 7 + day);
+            console.log(startDoW, weeks, contentDoW, dt);
             eItems[i].timing = dt.toISOString();
 
             eItems[i].locked = true;
         }
-
         console.log(eItems);
+        return;
 
         const body: ExportTimings = {
             courseId: props.id,
@@ -427,6 +431,29 @@ export default function CourseUpdate() {
                 </summary>
 
                 <div className="outline-2">
+                    <div className="flex justify-around items-center p-2 outline-2">
+                        <div>
+                            Start Date:
+                            <input type="date" className="ml-3 border-2 p-1"
+                                onBlur={e => {
+                                    const d = new Date(e.target.value + " 00:00:00")
+                                    if (d.getTime() > new Date().getTime()) {
+                                        setStartDate(d);
+                                    } else {
+                                        alert("Start date has to be in the future");
+                                        e.target.value = "";
+                                        setStartDate(null);
+                                    }
+                                }}
+                            />
+                        </div>
+
+                        <div>
+                            <p>
+                                Each week starts on <strong>{DayOfWeek[startDate.getDay()]}</strong>.
+                            </p>
+                        </div>
+                    </div>
                     <div className="flex justify-around">
                         <LabelConfig kind={LabelKind.TIME} labels={timeLabels}
                             labelConf={timeLabelConf}
@@ -447,7 +474,7 @@ interface LabelConfig {
     labelConf: TimeLabelConf | ContentLabelConf;
     updateLabelConf: (conf: TimeLabelConf | ContentLabelConf) => void;
 }
-function LabelConfig({kind, labels, labelConf, updateLabelConf}: LabelConfig) {
+function LabelConfig({kind, labels, labelConf, updateLabelConf}: LabelConfigProps) {
     const addValue = (label: string, value: string) => {
         updateLabelConf({...labelConf, [label]: value});
     };
@@ -604,7 +631,9 @@ function ConfInput({kind, setValue, _className_}: ConfInputProps) {
             break;
 
         case LabelKind.CONTENT:
-            _input_ = <input placeholder={"# of days from week start"}
+            _input_ = <DaysOfWeekSelect _className_={_className_}
+                action={(dow: DayOfWeek) => setValue(dow)} />
+            /*_input_ = <input placeholder={"# of days from week start"}
                 type="number" className={_className_} min={0} max={6}
                 onBlur={e => {
                     const n = Number.parseInt(e.target.value);
@@ -614,7 +643,7 @@ function ConfInput({kind, setValue, _className_}: ConfInputProps) {
                         alert("Content labels accept values from 0 to 6, inclusive");
                         e.target.value = "";
                     }
-                }} />;
+                }} />; */
             break;
     }
 
@@ -631,13 +660,13 @@ function DaysOfWeekSelect({action, _className_}: DaysOfWeekSelectProps) {
         <>
             <select onChange={e => action(e.target.value)} className={_className_}>
                 <option selected value={DayOfWeek.NONE}>Choose day of week</option>
+                <option value={DayOfWeek.SUN}>Sunday</option>
                 <option value={DayOfWeek.MON}>Monday</option>
                 <option value={DayOfWeek.TUE}>Tuesday</option>
                 <option value={DayOfWeek.WED}>Wednesday</option>
                 <option value={DayOfWeek.THU}>Thursday</option>
                 <option value={DayOfWeek.FRI}>Friday</option>
                 <option value={DayOfWeek.SAT}>Saturday</option>
-                <option value={DayOfWeek.SUN}>Sunday</option>
             </select>
         </>
     );
